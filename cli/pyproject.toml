@@ -2,6 +2,7 @@
 name = "todo-cli-tui"
 version = "0.1.0"
 description = "A terminal-based Todo CLI with keyboard-driven TUI"
+readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "textual>=0.80.0",
@@ -13,6 +14,9 @@ dev = [
     "pytest-asyncio>=0.23.0",
     "pytest-cov>=4.1.0",
 ]
+
+[project.scripts]
+todo = "todo_cli_tui.main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -29,7 +33,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["cli"]
+source = ["."]
 omit = [
     "tests/*",
     "*/test_*.py",
