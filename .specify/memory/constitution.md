@@ -1,19 +1,20 @@
 <!--
 Sync Impact Report
 ==================
-Version change: [INITIAL] → 1.0.0
-Modified principles: N/A (initial version)
+Version change: 1.0.0 → 1.1.0
+Modified principles: N/A (no principles renamed)
 Added sections:
-  - Core Principles (5 principles defined)
-  - Phase 1 Constraints
-  - Development Workflow
+  - Principle VI: Monorepo Structure Standard (new)
 Removed sections: N/A
 Templates requiring updates:
   ✅ constitution.md (this file)
   ✅ plan-template.md (reviewed for alignment)
   ✅ spec-template.md (reviewed for alignment)
   ✅ tasks-template.md (reviewed for alignment)
-Follow-up TODOs: None
+Follow-up TODOs:
+  - Create .spec-kit/ directory structure if not exists
+  - Create specs/ subdirectories (features/, api/, database/, ui/) if not exists
+  - Consider creating frontend/ and backend/ directories for future phases
 -->
 
 # Todo List Hackathon Constitution
@@ -44,6 +45,51 @@ Phase 1 implements single-user, single-session semantics. No authentication, aut
 This constitution governs Phase 1 exclusively. Each subsequent phase (II-V) will amend this document to add constraints appropriate to that phase's technology stack (e.g., persistence, web APIs, AI integration, orchestration). Principles from earlier phases remain in force unless explicitly superseded.
 
 **Rationale**: Ensures each phase builds on solid foundations while enabling architectural evolution.
+
+### VI. Monorepo Structure Standard (Project-Wide Non-Negotiable)
+The project MUST adhere to the standardized monorepo folder structure defined below. This structure applies across ALL phases and is enforced at the repository root level. Deviations require explicit constitution amendment.
+
+**Rationale**: Enforces consistency across phases, enables clear separation of concerns (specs vs. code vs. docs), supports scalable multi-service architecture, and aligns with Spec-Kit specification management best practices.
+
+**Required Structure**:
+```text
+hackathon-todo/
+├── .spec-kit/                    # Spec-Kit configuration
+│   └── config.yaml
+├── specs/                        # Spec-Kit managed specifications
+│   ├── overview.md               # Project overview
+│   ├── architecture.md           # System architecture
+│   ├── features/                 # Feature specifications
+│   │   ├── task-crud.md
+│   │   ├── authentication.md
+│   │   └── chatbot.md
+│   ├── api/                      # API specifications
+│   │   ├── rest-endpoints.md
+│   │   └── mcp-tools.md
+│   ├── database/                 # Database specifications
+│   │   └── schema.md
+│   └── ui/                       # UI specifications
+│       ├── components.md
+│       └── pages.md
+├── CLAUDE.md                     # Root Claude Code instructions
+├── frontend/                     # Frontend application (Phase 3+)
+│   ├── CLAUDE.md                 # Frontend-specific instructions
+│   └── ... (Next.js app)
+├── backend/                      # Backend application (Phase 2+)
+│   ├── CLAUDE.md                 # Backend-specific instructions
+│   └── ... (FastAPI app)
+├── cli/                          # CLI/TUI application (Phase 1)
+│   └── ... (Python Textual app)
+├── docker-compose.yml            # Container orchestration
+└── README.md                     # Project documentation
+```
+
+**Structure Enforcement Rules**:
+1. **Specs Directory Hierarchy**: All specifications MUST be organized under `specs/` with appropriate subdirectories (features/, api/, database/, ui/). Phase-specific specs (e.g., 001-todo-cli-tui) may coexist with the global spec structure.
+2. **Application Directories**: Each major application component (cli/, frontend/, backend/) MUST have its own CLAUDE.md with component-specific instructions that inherit from root CLAUDE.md.
+3. **Configuration Management**: `.spec-kit/config.yaml` is the authoritative source for Spec-Kit configuration. Manual edits must be synchronized with constitution principles.
+4. **Phase Compliance**: Phase 1 uses `cli/` directory exclusively. Phases 2+ MAY add `backend/`, `frontend/`, and other directories as defined in their respective constitutions.
+5. **Documentation Hierarchy**: Root CLAUDE.md contains project-wide directives. Component CLAUDE.md files contain phase/technology-specific guidance that must not contradict root principles.
 
 ## Phase 1 Constraints
 
@@ -104,7 +150,7 @@ This constitution is the authoritative source for Phase 1 development decisions.
 
 **Compliance**:
 - All pull requests MUST reference applicable constitution principles
-- Code reviews MUST verify constraint compliance (no persistence in Phase 1, TUI requirements met)
+- Code reviews MUST verify constraint compliance (no persistence in Phase 1, TUI requirements met, monorepo structure enforced)
 - Violations MUST be addressed before merge
 
 **Phase Transition**:
@@ -112,6 +158,6 @@ When moving to Phase 2, this constitution will be amended to:
 - Add persistence principles
 - Add web API constraints
 - Revise technology stack principles
-- Preserve Phase 1 principles where applicable (e.g., code quality, testing)
+- Preserve Phase 1 principles where applicable (e.g., code quality, testing, monorepo structure)
 
-**Version**: 1.0.0 | **Ratified**: 2026-01-02 | **Last Amended**: 2026-01-02
+**Version**: 1.1.0 | **Ratified**: 2026-01-02 | **Last Amended**: 2026-01-06

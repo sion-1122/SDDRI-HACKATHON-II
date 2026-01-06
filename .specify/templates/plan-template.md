@@ -53,46 +53,60 @@ specs/[###-feature]/
   for this feature. Delete unused options and expand the chosen structure with
   real paths (e.g., apps/admin, packages/something). The delivered plan must
   not include Option labels.
+
+  IMPORTANT: Per Principle VI (Monorepo Structure Standard), the project must
+  follow the standardized monorepo layout. Select the option that matches the
+  phase/technology stack being implemented.
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
+# [REMOVE IF UNUSED] Option 1: CLI/TUI application (Phase 1)
+cli/
 ├── models/
 ├── services/
-├── cli/
-└── lib/
+├── ui/
+└── main.py
 
 tests/
 ├── contract/
 ├── integration/
 └── unit/
 
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+# [REMOVE IF UNUSED] Option 2: Web application (Phases 2-3: backend + frontend)
 backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
+├── models/
+├── services/
+├── api/
 └── tests/
 
 frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
+├── components/
+├── pages/
+├── services/
 └── tests/
 
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
+# [REMOVE IF UNUSED] Option 3: Full monorepo (All phases: cli + backend + frontend)
+cli/
+├── models/
+├── services/
+├── ui/
+└── tests/
 
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+backend/
+├── models/
+├── services/
+├── api/
+└── tests/
+
+frontend/
+├── components/
+├── pages/
+├── services/
+└── tests/
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+directories captured above. Must comply with Principle VI: Monorepo Structure Standard.]
 
 ## Complexity Tracking
 

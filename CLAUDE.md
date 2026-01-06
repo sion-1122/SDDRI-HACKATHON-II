@@ -1,3 +1,5 @@
+
+@AGENTS.md
 # todo-list-hackathon Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-01-02
