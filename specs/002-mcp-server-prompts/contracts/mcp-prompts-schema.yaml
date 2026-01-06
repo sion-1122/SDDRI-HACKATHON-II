@@ -1,0 +1,422 @@
+# MCP Prompts Schema
+# Feature: 002-mcp-server-prompts
+# Defines the JSON schemas for MCP prompt protocol messages
+
+# =============================================================================
+# prompts/list - Request
+# =============================================================================
+
+prompts_list_request:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    id:
+      type: integer
+      description: Request ID for response correlation
+    method:
+      type: string
+      const: "prompts/list"
+    params:
+      type: object
+      properties:
+        cursor:
+          type: string
+          description: Pagination cursor (not used for small prompt lists)
+      additionalProperties: false
+  required:
+    - jsonrpc
+    - id
+    - method
+  additionalProperties: false
+
+# =============================================================================
+# prompts/list - Response
+# =============================================================================
+
+prompts_list_response:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    id:
+      type: integer
+    result:
+      type: object
+      properties:
+        prompts:
+          type: array
+          items:
+            $ref: '#/prompt_definition'
+        nextCursor:
+          type: string
+          description: Cursor for next page (omitted if no more pages)
+      required:
+        - prompts
+  required:
+    - jsonrpc
+    - id
+    - result
+  additionalProperties: false
+
+prompt_definition:
+  type: object
+  properties:
+    name:
+      type: string
+      description: "Unique prompt identifier (e.g., 'sp.specify')"
+      examples:
+        - "sp.specify"
+        - "sp.plan"
+        - "git.commit"
+    description:
+      type: string
+      description: "Human-readable description of the prompt"
+      example: "Create or update the feature specification from a natural language description"
+    arguments:
+      type: array
+      description: "Arguments accepted by the prompt"
+      items:
+        $ref: '#/prompt_argument'
+      example:
+        - name: "arguments"
+          description: "User input for the feature description"
+          required: false
+  required:
+    - name
+  additionalProperties: false
+
+prompt_argument:
+  type: object
+  properties:
+    name:
+      type: string
+      description: "Argument name"
+      example: "arguments"
+    description:
+      type: string
+      description: "Description of what this argument is for"
+      example: "User input for the feature description"
+    required:
+      type: boolean
+      description: "Whether this argument must be provided"
+      default: false
+  required:
+    - name
+  additionalProperties: false
+
+# =============================================================================
+# prompts/get - Request
+# =============================================================================
+
+prompts_get_request:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    id:
+      type: integer
+    method:
+      type: string
+      const: "prompts/get"
+    params:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Prompt name to retrieve"
+          example: "sp.specify"
+        arguments:
+          type: object
+          description: "Arguments to substitute into prompt template"
+          additionalProperties: true
+          example:
+            arguments: "Add user authentication feature"
+      required:
+        - name
+  required:
+    - jsonrpc
+    - id
+    - method
+    - params
+  additionalProperties: false
+
+# =============================================================================
+# prompts/get - Response
+# =============================================================================
+
+prompts_get_response:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    id:
+      type: integer
+    result:
+      type: object
+      properties:
+        description:
+          type: string
+          description: "Optional description of the prompt response"
+        messages:
+          type: array
+          description: "Prompt messages with substituted arguments"
+          items:
+            $ref: '#/prompt_message'
+      required:
+        - messages
+  required:
+    - jsonrpc
+    - id
+    - result
+  additionalProperties: false
+
+prompt_message:
+  type: object
+  properties:
+    role:
+      type: string
+      enum: ["user", "assistant"]
+      description: "Message role indicating speaker"
+    content:
+      oneOf:
+        - $ref: '#/text_content'
+        - $ref: '#/image_content'
+        - $ref: '#/audio_content'
+        - $ref: '#/resource_content'
+      description: "Message content (varies by type)"
+  required:
+    - role
+    - content
+  additionalProperties: false
+
+# Content types
+text_content:
+  type: object
+  properties:
+    type:
+      type: string
+      const: "text"
+    text:
+      type: string
+      description: "Text content with substituted arguments"
+      example: |
+        ## User Input
+
+        Add user authentication feature
+
+        You MUST consider the user input before proceeding...
+  required:
+    - type
+    - text
+  additionalProperties: false
+
+image_content:
+  type: object
+  properties:
+    type:
+      type: string
+      const: "image"
+    data:
+      type: string
+      description: "Base64-encoded image data"
+      pattern: "^[A-Za-z0-9+/]+=*$"
+    mimeType:
+      type: string
+      enum: ["image/png", "image/jpeg", "image/gif", "image/webp"]
+      description: "MIME type of the image"
+  required:
+    - type
+    - data
+    - mimeType
+  additionalProperties: false
+
+audio_content:
+  type: object
+  properties:
+    type:
+      type: string
+      const: "audio"
+    data:
+      type: string
+      description: "Base64-encoded audio data"
+      pattern: "^[A-Za-z0-9+/]+=*$"
+    mimeType:
+      type: string
+      enum: ["audio/wav", "audio/mp3", "audio/ogg"]
+      description: "MIME type of the audio"
+  required:
+    - type
+    - data
+    - mimeType
+  additionalProperties: false
+
+resource_content:
+  type: object
+  properties:
+    type:
+      type: string
+      const: "resource"
+    resource:
+      type: object
+      properties:
+        uri:
+          type: string
+          description: "Resource URI"
+          example: "file:///path/to/resource.txt"
+        mimeType:
+          type: string
+          description: "Resource MIME type"
+          example: "text/plain"
+        text:
+          type: string
+          description: "Text content of the resource"
+        blob:
+          type: string
+          description: "Base64-encoded binary content"
+      required:
+        - uri
+  required:
+    - type
+    - resource
+  additionalProperties: false
+
+# =============================================================================
+# notifications/prompts/list_changed - Notification
+# =============================================================================
+
+prompts_list_changed_notification:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    method:
+      type: string
+      const: "notifications/prompts/list_changed"
+  required:
+    - jsonrpc
+    - method
+  additionalProperties: false
+
+# =============================================================================
+# Error Responses
+# =============================================================================
+
+error_response:
+  type: object
+  properties:
+    jsonrpc:
+      type: string
+      const: "2.0"
+    id:
+      type: integer
+    error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: "JSON-RPC error code"
+          enum:
+            - -32700  # Parse error
+            - -32600  # Invalid Request
+            - -32601  # Method not found
+            - -32602  # Invalid params
+            - -32603  # Internal error
+        message:
+          type: string
+          description: "Error message"
+        data:
+          type: object
+          description: "Additional error data"
+          additionalProperties: true
+      required:
+        - code
+        - message
+  required:
+    - jsonrpc
+    - id
+    - error
+  additionalProperties: false
+
+# =============================================================================
+# Example Complete Flows
+# =============================================================================
+
+# Example 1: List all prompts
+example_list_all:
+  request:
+    jsonrpc: "2.0"
+    id: 1
+    method: "prompts/list"
+    params: {}
+  response:
+    jsonrpc: "2.0"
+    id: 1
+    result:
+      prompts:
+        - name: "sp.specify"
+          description: "Create or update the feature specification"
+          arguments:
+            - name: "arguments"
+              description: "Feature description"
+              required: false
+        - name: "sp.plan"
+          description: "Create implementation plan for feature"
+          arguments:
+            - name: "arguments"
+              description: "Feature identifier"
+              required: false
+
+# Example 2: Get prompt with arguments
+example_get_prompt:
+  request:
+    jsonrpc: "2.0"
+    id: 2
+    method: "prompts/get"
+    params:
+      name: "sp.specify"
+      arguments:
+        arguments: "Add OAuth2 authentication"
+  response:
+    jsonrpc: "2.0"
+    id: 2
+    result:
+      description: "Specification creation prompt with user arguments"
+      messages:
+        - role: "user"
+          content:
+            type: "text"
+            text: |
+              ## User Input
+
+              Add OAuth2 authentication
+
+              You MUST consider the user input before proceeding...
+
+# Example 3: List changed notification (hot-reload)
+example_list_changed:
+  notification:
+    jsonrpc: "2.0"
+    method: "notifications/prompts/list_changed"
+
+# Example 4: Error - Prompt not found
+example_error_not_found:
+  request:
+    jsonrpc: "2.0"
+    id: 3
+    method: "prompts/get"
+    params:
+      name: "sp.nonexistent"
+  response:
+    jsonrpc: "2.0"
+    id: 3
+    error:
+      code: -32602
+      message: "Invalid params"
+      data:
+        detail: "Prompt not found: sp.nonexistent"

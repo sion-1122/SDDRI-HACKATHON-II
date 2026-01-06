@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "specifyplus-prompts": {
+      "url": "http://localhost:8000/mcp",
+      "env": {
+        "SPECIFYPLUS_COMMANDS_DIR": "/mnt/d/class/todo-list-hackathon/.claude/commands"
+      }
+    }
+  }
+}
