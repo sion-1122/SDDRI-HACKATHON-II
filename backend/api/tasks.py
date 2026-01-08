@@ -1,12 +1,17 @@
-"""Task CRUD API endpoints.
+"""Task CRUD API endpoints with JWT authentication.
 
-Implements all task management operations:
+[Task]: T053-T059
+[From]: specs/001-user-auth/tasks.md (User Story 3)
+
+Implements all task management operations with JWT-based authentication:
 - Create task
 - List tasks
 - Get task by ID
 - Update task
 - Delete task
 - Toggle completion status
+
+All endpoints require valid JWT token. user_id is extracted from JWT claims.
 """
 import uuid
 from datetime import datetime
@@ -14,30 +19,30 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import Session, select
 
-from core.deps import SessionDep
+from core.deps import SessionDep, CurrentUserDep
 from models.task import Task, TaskCreate, TaskUpdate, TaskRead
 
-# Create API router with user_id prefix
-router = APIRouter(prefix="/api/{user_id}/tasks", tags=["tasks"])
+# Create API router (user_id removed - now from JWT)
+router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 
 @router.post("", response_model=TaskRead, status_code=201)
 def create_task(
-    user_id: uuid.UUID,
     task: TaskCreate,
-    session: SessionDep
+    session: SessionDep,
+    user_id: CurrentUserDep  # Injected from JWT
 ):
-    """Create a new task.
+    """Create a new task for the authenticated user.
 
     Args:
-        user_id: UUID of the user creating the task
         task: Task data from request body
         session: Database session
+        user_id: UUID from JWT token (injected)
 
     Returns:
         Created task with generated ID and timestamps
     """
-    # Create Task from TaskCreate with user_id
+    # Create Task from TaskCreate with injected user_id
     db_task = Task(
         user_id=user_id,
         title=task.title,
@@ -52,23 +57,23 @@ def create_task(
 
 @router.get("", response_model=list[TaskRead])
 def list_tasks(
-    user_id: uuid.UUID,
     session: SessionDep,
+    user_id: CurrentUserDep,  # Injected from JWT
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 50,
     completed: bool | None = None,
 ):
-    """List all tasks for a user with pagination and filtering.
+    """List all tasks for the authenticated user with pagination and filtering.
 
     Args:
-        user_id: UUID of the user
         session: Database session
+        user_id: UUID from JWT token (injected)
         offset: Number of tasks to skip (pagination)
         limit: Maximum number of tasks to return (default 50, max 100)
         completed: Optional filter by completion status
 
     Returns:
-        List of tasks belonging to the user, filtered and paginated
+        List of tasks belonging to the authenticated user, filtered and paginated
     """
     statement = select(Task).where(Task.user_id == user_id)
 
@@ -88,19 +93,19 @@ def list_tasks(
 
 @router.get("/{task_id}", response_model=TaskRead)
 def get_task(
-    user_id: uuid.UUID,
     task_id: uuid.UUID,
-    session: SessionDep
+    session: SessionDep,
+    user_id: CurrentUserDep  # Injected from JWT
 ):
     """Get a specific task by ID.
 
     Args:
-        user_id: UUID of the user
         task_id: UUID of the task to retrieve
         session: Database session
+        user_id: UUID from JWT token (injected)
 
     Returns:
-        Task details if found and owned by user
+        Task details if found and owned by authenticated user
 
     Raises:
         HTTPException 404: If task not found or doesn't belong to user
@@ -113,18 +118,18 @@ def get_task(
 
 @router.put("/{task_id}", response_model=TaskRead)
 def update_task(
-    user_id: uuid.UUID,
     task_id: uuid.UUID,
     task_update: TaskUpdate,
-    session: SessionDep
+    session: SessionDep,
+    user_id: CurrentUserDep  # Injected from JWT
 ):
     """Update an existing task.
 
     Args:
-        user_id: UUID of the user
         task_id: UUID of the task to update
         task_update: Fields to update (all optional)
         session: Database session
+        user_id: UUID from JWT token (injected)
 
     Returns:
         Updated task details
@@ -152,16 +157,16 @@ def update_task(
 
 @router.delete("/{task_id}")
 def delete_task(
-    user_id: uuid.UUID,
     task_id: uuid.UUID,
-    session: SessionDep
+    session: SessionDep,
+    user_id: CurrentUserDep  # Injected from JWT
 ):
     """Delete a task.
 
     Args:
-        user_id: UUID of the user
         task_id: UUID of the task to delete
         session: Database session
+        user_id: UUID from JWT token (injected)
 
     Returns:
         Success confirmation
@@ -180,16 +185,16 @@ def delete_task(
 
 @router.patch("/{task_id}/complete", response_model=TaskRead)
 def toggle_complete(
-    user_id: uuid.UUID,
     task_id: uuid.UUID,
-    session: SessionDep
+    session: SessionDep,
+    user_id: CurrentUserDep  # Injected from JWT
 ):
     """Toggle task completion status.
 
     Args:
-        user_id: UUID of the user
         task_id: UUID of the task to toggle
         session: Database session
+        user_id: UUID from JWT token (injected)
 
     Returns:
         Task with toggled completion status
