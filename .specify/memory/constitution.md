@@ -1,50 +1,58 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0
-Modified principles: N/A (no principles renamed)
+Version change: 1.1.0 → 2.0.0
+Modified principles:
+  - Principle I: "In-Memory Execution (Phase 1)" → "Persistent Storage (Phase II)"
+  - Principle IV: "Single User, Single Session" → "Multi-User Architecture with Authentication"
 Added sections:
-  - Principle VI: Monorepo Structure Standard (new)
-Removed sections: N/A
+  - Principle VII: RESTful API Design
+  - Principle VIII: Authentication & Authorization
+  - Principle IX: Frontend Architecture (Next.js)
+  - Principle X: Data Ownership & Isolation
+Removed sections: N/A (Phase I principles preserved in Phase I section)
 Templates requiring updates:
   ✅ constitution.md (this file)
-  ✅ plan-template.md (reviewed for alignment)
-  ✅ spec-template.md (reviewed for alignment)
-  ✅ tasks-template.md (reviewed for alignment)
+  ✅ plan-template.md (reviewed - already supports web app structure)
+  ✅ spec-template.md (reviewed - already supports web features)
+  ✅ tasks-template.md (reviewed - already supports backend/frontend paths)
 Follow-up TODOs:
-  - Create .spec-kit/ directory structure if not exists
-  - Create specs/ subdirectories (features/, api/, database/, ui/) if not exists
-  - Consider creating frontend/ and backend/ directories for future phases
+  - Create /specs/features/ subdirectory if not exists
+  - Create /specs/api/ subdirectory if not exists
+  - Create /specs/database/ subdirectory if not exists
+  - Create /specs/ui/ subdirectory if not exists
+  - Create backend/CLAUDE.md with backend-specific instructions
+  - Create frontend/CLAUDE.md with frontend-specific instructions
 -->
 
 # Todo List Hackathon Constitution
 
 ## Core Principles
 
-### I. In-Memory Execution (Phase 1 Non-Negotiable)
-All state MUST be maintained in memory during Phase 1. No persistence layer, database, or file-based storage is permitted. Tasks exist only for the duration of the REPL session. This constraint ensures focused learning of core Python and TUI patterns before introducing complexity.
+### I. Persistent Storage (Phase II Non-Negotiable)
+All state MUST be persisted in a relational database during Phase II. Every task, user account, and authentication state MUST be stored in Neon Serverless PostgreSQL using SQLModel. No in-memory-only data persistence is permitted beyond request-scoped caching. This constraint ensures data durability, multi-user concurrency, and scalability.
 
-**Rationale**: Forces mastery of fundamental data structures and application lifecycle without premature optimization.
+**Rationale**: Production applications require reliable data persistence. Database storage enables multi-user access, data durability across sessions, and establishes the foundation for advanced features (querying, relationships, analytics).
 
-### II. Terminal UI Excellence
-The application MUST provide a beautiful, responsive TUI (Terminal User Interface). Use of established TUI libraries (e.g., `textual`, `rich`, `curses`) is encouraged. All interactions MUST be keyboard-driven with intuitive navigation (arrow keys for selection, space for toggling, enter for submission).
+### II. RESTful API Excellence
+The backend MUST implement a RESTful API using FastAPI with clear resource boundaries, standard HTTP methods (GET, POST, PUT, DELETE), and appropriate status codes. All endpoints MUST be under `/api` path, require valid JWT authentication, and return JSON responses with consistent error handling.
 
-**Rationale**: Terminal UI skills are foundational for CLI tools and provide immediate visual feedback without browser dependencies.
+**Rationale**: RESTful APIs provide standardized client-server communication, enable stateless interactions, support multiple client types (web, mobile, CLI), and establish clear contracts for frontend development.
 
-### III. REPL Architecture
-The application MUST implement a continuous Read-Eval-Print Loop. After every action completion, the user MUST return to the main menu. The loop persists until explicit exit. No action should terminate the application except "exit".
+### III. Responsive Web UI
+The frontend MUST provide a responsive, accessible web UI using Next.js App Router. All interactions MUST be optimized for keyboard and mouse input with intuitive navigation. The UI MUST work across desktop, tablet, and mobile viewports with mobile-first responsive design.
 
-**Rationale**: REPL patterns teach state management and event-driven programming basics essential for later phases.
+**Rationale**: Web UI provides universal access without installation, responsive design ensures usability across devices, and Next.js App Router delivers optimal performance with server-side rendering and modern React patterns.
 
-### IV. Single User, Single Session
-Phase 1 implements single-user, single-session semantics. No authentication, authorization, or multi-user data isolation. All tasks belong to the current user in the current session.
+### IV. Multi-User Architecture with Authentication
+Phase II implements multi-user, multi-session semantics with authentication and authorization. Every user MUST authenticate via Better Auth before accessing any functionality. All data MUST be scoped to the authenticated user. Users cannot access another user's tasks under any circumstances.
 
-**Rationale**: Removes security and data complexity to focus on core feature implementation and UI/UX.
+**Rationale**: Multi-user support enables real-world usage scenarios. Authentication establishes identity, authorization enforces data boundaries, and session management enables secure, persistent access across devices.
 
 ### V. Incremental Phase Evolution
-This constitution governs Phase 1 exclusively. Each subsequent phase (II-V) will amend this document to add constraints appropriate to that phase's technology stack (e.g., persistence, web APIs, AI integration, orchestration). Principles from earlier phases remain in force unless explicitly superseded.
+This constitution governs Phase II exclusively. Each subsequent phase (III-V) will amend this document to add constraints appropriate to that phase's technology stack (e.g., AI integration, orchestration, advanced features). Principles from earlier phases remain in force unless explicitly superseded. Phase I principles are preserved in the "Phase I Legacy" section for historical reference.
 
-**Rationale**: Ensures each phase builds on solid foundations while enabling architectural evolution.
+**Rationale**: Ensures each phase builds on solid foundations while enabling architectural evolution and preventing scope creep.
 
 ### VI. Monorepo Structure Standard (Project-Wide Non-Negotiable)
 The project MUST adhere to the standardized monorepo folder structure defined below. This structure applies across ALL phases and is enforced at the repository root level. Deviations require explicit constitution amendment.
@@ -53,111 +61,191 @@ The project MUST adhere to the standardized monorepo folder structure defined be
 
 **Required Structure**:
 ```text
-hackathon-todo/
-├── .spec-kit/                    # Spec-Kit configuration
-│   └── config.yaml
+todo-list-hackathon/
+├── .specify/                     # Spec-Kit configuration
+│   └── memory/
+│       └── constitution.md       # This file
 ├── specs/                        # Spec-Kit managed specifications
 │   ├── overview.md               # Project overview
-│   ├── architecture.md           # System architecture
 │   ├── features/                 # Feature specifications
 │   │   ├── task-crud.md
-│   │   ├── authentication.md
-│   │   └── chatbot.md
+│   │   └── authentication.md
 │   ├── api/                      # API specifications
-│   │   ├── rest-endpoints.md
-│   │   └── mcp-tools.md
+│   │   └── rest-endpoints.md
 │   ├── database/                 # Database specifications
 │   │   └── schema.md
 │   └── ui/                       # UI specifications
 │       ├── components.md
 │       └── pages.md
 ├── CLAUDE.md                     # Root Claude Code instructions
-├── frontend/                     # Frontend application (Phase 3+)
+├── AGENTS.md                     # Agent behavior guidelines (SDD workflow)
+├── frontend/                     # Frontend application (Phase II+)
 │   ├── CLAUDE.md                 # Frontend-specific instructions
-│   └── ... (Next.js app)
-├── backend/                      # Backend application (Phase 2+)
+│   ├── app/                      # Next.js App Router pages
+│   ├── components/               # React components
+│   ├── lib/                      # Utility functions and auth client
+│   └── public/                   # Static assets
+├── backend/                      # Backend application (Phase II+)
 │   ├── CLAUDE.md                 # Backend-specific instructions
-│   └── ... (FastAPI app)
-├── cli/                          # CLI/TUI application (Phase 1)
+│   ├── app/                      # FastAPI application
+│   ├── models/                   # SQLModel database models
+│   ├── services/                 # Business logic layer
+│   ├── api/                      # API route handlers
+│   └── core/                     # Configuration, security, deps
+├── cli/                          # CLI/TUI application (Phase I legacy)
 │   └── ... (Python Textual app)
-├── docker-compose.yml            # Container orchestration
 └── README.md                     # Project documentation
 ```
 
 **Structure Enforcement Rules**:
-1. **Specs Directory Hierarchy**: All specifications MUST be organized under `specs/` with appropriate subdirectories (features/, api/, database/, ui/). Phase-specific specs (e.g., 001-todo-cli-tui) may coexist with the global spec structure.
+1. **Specs Directory Hierarchy**: All specifications MUST be organized under `specs/` with appropriate subdirectories (features/, api/, database/, ui/). Phase-specific specs (e.g., 001-todo-cli-tui) coexist with the global spec structure.
 2. **Application Directories**: Each major application component (cli/, frontend/, backend/) MUST have its own CLAUDE.md with component-specific instructions that inherit from root CLAUDE.md.
-3. **Configuration Management**: `.spec-kit/config.yaml` is the authoritative source for Spec-Kit configuration. Manual edits must be synchronized with constitution principles.
-4. **Phase Compliance**: Phase 1 uses `cli/` directory exclusively. Phases 2+ MAY add `backend/`, `frontend/`, and other directories as defined in their respective constitutions.
+3. **Configuration Management**: `.specify/` is the authoritative source for Spec-Kit configuration. Manual edits must be synchronized with constitution principles.
+4. **Phase Compliance**: Phase I uses `cli/` directory. Phase II uses `backend/` and `frontend/` directories. All directories coexist in the monorepo.
 5. **Documentation Hierarchy**: Root CLAUDE.md contains project-wide directives. Component CLAUDE.md files contain phase/technology-specific guidance that must not contradict root principles.
 
-## Phase 1 Constraints
+### VII. Authentication & JWT Security
+All API endpoints MUST require valid JWT authentication. JWTs MUST be issued by Better Auth on the frontend during login. The frontend MUST send JWTs via `Authorization: Bearer <token>` header. The backend MUST verify JWT signatures using the shared `BETTER_AUTH_SECRET` environment variable and extract `user_id` from validated tokens. Requests without valid JWT MUST return HTTP 401 Unauthorized.
+
+**Rationale**: JWT provides stateless, secure authentication that scales horizontally. Shared secret ensures both services trust the same tokens. Extracting user_id from JWT enables scoping all data queries to the authenticated user, preventing unauthorized access.
+
+### VIII. Frontend Architecture (Next.js)
+The frontend MUST use Next.js App Router with React Server Components where appropriate. Authentication MUST be handled by Better Auth integrated with Next.js. Client-side state MUST be minimized and preferrably managed through URL params, cookies, or server state. All API calls MUST include the JWT token in the Authorization header. Components SHOULD be server components by default, with client components only for interactivity (forms, modals, real-time updates).
+
+**Rationale**: Next.js App Router provides optimal performance with server-side rendering, streaming, and built-in optimization. Server components reduce client-side JavaScript, improve SEO, and simplify data fetching. Better Auth provides seamless authentication with Next.js integration.
+
+### IX. Data Ownership & Isolation
+All database queries MUST be scoped to the authenticated user extracted from the JWT token. When a user creates a task, the `user_id` from the JWT MUST be stored as the task owner. When listing, updating, or deleting tasks, queries MUST filter by `user_id`. Users MUST NEVER be able to access, modify, or delete tasks owned by other users. Any attempt to access another user's data MUST return HTTP 403 Forbidden or HTTP 404 Not Found.
+
+**Rationale**: Enforces data isolation, prevents unauthorized data access, ensures multi-user tenancy, and establishes clear ownership boundaries. This is a critical security requirement for multi-user applications.
+
+### X. API Response Consistency
+All API endpoints MUST return consistent JSON responses with a standardized structure. Success responses MUST include the requested data or confirmation. Error responses MUST include a clear error message and appropriate HTTP status code (400 for client errors, 401 for unauthorized, 403 for forbidden, 404 for not found, 500 for server errors). Validation errors MUST list all validation failures with field-specific messages.
+
+**Rationale**: Consistent API responses enable predictable frontend error handling, improve debugging, and provide clear feedback to users. Standardized structures reduce client-side complexity and improve developer experience.
+
+## Phase II Constraints
 
 **Technology Stack**:
-- Python 3.13+ (as specified in pyproject.toml)
-- Standard library plus TUI libraries only
-- Package management via `uv`
-- Execution via `uv run main.py` or equivalent
+- **Backend**: Python 3.13+ with FastAPI, SQLModel, Pydantic
+- **Frontend**: Next.js 15+ with App Router, React 19+, TypeScript
+- **Authentication**: Better Auth (Next.js) with JWT
+- **Database**: Neon Serverless PostgreSQL with SQLModel ORM
+- **Package Management**: `uv` for backend, `npm` for frontend
+- **Execution**: Backend via `uv run uvicorn backend.app:app`, frontend via `npm run dev`
 
-**Required Features**:
-1. **Add Task**: Prompt user for task description, save to in-memory list
-2. **List Tasks**: Display all tasks with completion status, browsable via arrow keys
-3. **Delete Task**: Remove task from in-memory list
-4. **Edit Task**: Modify existing task description
-5. **Exit**: Terminate the REPL session
+**Required Features** (All from Phase I, adapted for web):
+1. **Add Task**: User creates task via web form, persisted to database with user ownership
+2. **List Tasks**: Display all tasks for authenticated user, paginated and filterable
+3. **Delete Task**: Remove task from database (only if owned by user)
+4. **Edit Task**: Modify existing task description (only if owned by user)
+5. **Toggle Completion**: Mark task as complete/incomplete (only if owned by user)
+
+**Authentication Requirements**:
+- User registration via email/password (handled by Better Auth)
+- User login via email/password (issues JWT)
+- User logout (invalidates session)
+- Protected routes: All pages except login/register require authentication
+- API authentication: All `/api` endpoints require valid JWT
 
 **Interaction Requirements**:
-- Main menu: Browsable list of 5 actions, arrow key navigation, enter to select
-- Task list view: Arrow key navigation, space bar to toggle completion status
-- All views return to main menu after action completion (except Exit)
+- **Main UI**: Single-page application with task list view
+- **Task List View**: Display all user's tasks with completion status
+- **Add Task Form**: Input field for task description, submit button
+- **Task Actions**: Buttons to edit, delete, and toggle completion
+- **Responsive Design**: Mobile-first layout that works on all devices
+- **Real-time Updates**: UI updates immediately after successful API calls
 
-**Out of Scope for Phase 1**:
-- Persistence (database, files, API storage)
-- Authentication/multi-user support
+**Out of Scope for Phase II**:
 - Task metadata (due dates, priorities, tags)
-- Networking or external APIs
-- Web interface or GUI
+- Real-time collaboration (websockets, live updates)
+- Task sharing between users
+- File attachments to tasks
+- Advanced filtering and search
+- Task categories or projects
+- Email notifications
+- Export tasks to various formats
 
 ## Development Workflow
 
 **Code Quality**:
-- Follow PEP 8 style guidelines
-- Type hints required for all function signatures
-- Docstrings for all public functions and classes
-- Maximum function complexity: if it needs more than 5 lines of explanation, break it down
+- **Backend**: Follow PEP 8, type hints required, docstrings for public APIs
+- **Frontend**: Follow ESLint rules, TypeScript strict mode, React best practices
+- **Testing**: Unit tests for business logic, integration tests for API endpoints, E2E tests for critical user journeys
+- **Code Reviews**: All changes MUST be reviewed before merge, MUST check constitution compliance
 
 **Testing Strategy**:
-- Unit tests for business logic (task CRUD operations)
-- Integration tests for REPL flow (menu navigation, action execution)
-- Mock TUI interactions for testability
-- Test coverage target: 70%+ (Phase 1)
+- **Backend Unit Tests**: pytest for business logic (task CRUD operations, JWT verification)
+- **Backend Integration Tests**: Test API endpoints with test database, mock JWT verification
+- **Frontend Component Tests**: React Testing Library for component behavior
+- **E2E Tests**: Playwright or Cypress for critical user journeys (login, create task, toggle completion)
+- **Test Coverage Target**: 70%+ for backend and frontend business logic
+
+**Security Requirements**:
+- All API endpoints MUST require valid JWT (no public endpoints except auth)
+- User passwords MUST be hashed (handled by Better Auth)
+- SQL injection prevention via SQLModel parameterized queries (no raw SQL)
+- XSS prevention via React automatic escaping and Content Security Policy
+- CSRF protection via SameSite cookies and JWT in Authorization header
+- Environment variables MUST be used for secrets (BETTER_AUTH_SECRET, DATABASE_URL)
 
 **Acceptance Criteria**:
-- Script runs without errors via `uv run main.py`
-- User can complete all 5 actions in a single session
-- TUI responds to keyboard inputs within 100ms
-- No memory leaks during extended sessions (>100 actions)
+- Backend runs without errors via `uv run uvicorn backend.app:app --reload`
+- Frontend runs without errors via `npm run dev`
+- User can register, login, and complete all 5 task actions in a single session
+- API returns 401 for requests without JWT
+- User cannot access another user's tasks (verified via integration tests)
+- UI responds to user interactions within 200ms
+- All data persists across page refreshes and browser restarts
 
 ## Governance
 
-This constitution is the authoritative source for Phase 1 development decisions. Any deviation requires explicit team discussion and constitution amendment.
+This constitution is the authoritative source for Phase II development decisions. Any deviation requires explicit team discussion and constitution amendment.
 
 **Amendment Process**:
 1. Propose change with rationale
-2. Document impact on existing code/user stories
+2. Document impact on existing code/specifications
 3. Update version number (semantic versioning)
 4. Sync changes to all dependent templates (plan, spec, tasks)
+5. Update CLAUDE.md files if technology stack changes
 
 **Compliance**:
 - All pull requests MUST reference applicable constitution principles
-- Code reviews MUST verify constraint compliance (no persistence in Phase 1, TUI requirements met, monorepo structure enforced)
+- Code reviews MUST verify constraint compliance (JWT auth, data ownership, monorepo structure)
+- Security violations MUST be addressed immediately (authentication bypasses, data leaks)
 - Violations MUST be addressed before merge
 
 **Phase Transition**:
-When moving to Phase 2, this constitution will be amended to:
-- Add persistence principles
-- Add web API constraints
-- Revise technology stack principles
-- Preserve Phase 1 principles where applicable (e.g., code quality, testing, monorepo structure)
+When moving to Phase III, this constitution will be amended to:
+- Add AI integration principles
+- Add orchestration constraints (if applicable)
+- Revise technology stack principles (if applicable)
+- Preserve Phase II principles where applicable (code quality, testing, security, monorepo structure)
 
-**Version**: 1.1.0 | **Ratified**: 2026-01-02 | **Last Amended**: 2026-01-06
+**Version**: 2.0.0 | **Ratified**: 2026-01-02 | **Last Amended**: 2026-01-08
+
+---
+
+## Phase I Legacy (Preserved for Reference)
+
+The following principles governed Phase I (CLI/TUI application) and are preserved here for historical reference. These principles are **NOT active** in Phase II but may be referenced for understanding the project's evolution.
+
+### I. In-Memory Execution (Phase 1 - RETIRED)
+All state was maintained in memory during Phase 1. No persistence layer, database, or file-based storage was permitted. Tasks existed only for the duration of the REPL session.
+
+**Retirement Rationale**: Phase II requires persistent storage for multi-user web application. In-memory execution is no longer appropriate.
+
+### II. Terminal UI Excellence (Phase 1 - RETIRED)
+The application provided a beautiful, responsive TUI (Terminal User Interface) using Textual. All interactions were keyboard-driven with intuitive navigation.
+
+**Retirement Rationale**: Phase II uses web UI instead of terminal UI. These principles are replaced by "Responsive Web UI" (Principle III in Phase II).
+
+### III. REPL Architecture (Phase 1 - RETIRED)
+The application implemented a continuous Read-Eval-Print Loop. After every action completion, the user returned to the main menu.
+
+**Retirement Rationale**: Phase II uses request/response web architecture instead of REPL pattern. The REPL pattern is not applicable to web applications.
+
+### IV. Single User, Single Session (Phase 1 - RETIRED)
+Phase 1 implemented single-user, single-session semantics with no authentication or multi-user data isolation.
+
+**Retirement Rationale**: Phase II requires multi-user architecture with authentication. This principle is replaced by "Multi-User Architecture with Authentication" (Principle IV in Phase II).
