@@ -1,0 +1,377 @@
+openapi: 3.0.3
+info:
+  title: Todo List API - Authentication Endpoints
+  description: |
+    REST API for user authentication with BetterAuth and JWT verification.
+
+    ## Authentication
+    All endpoints except `/api/auth/*` require JWT authentication via the `Authorization: Bearer <token>` header.
+
+    ## Error Responses
+    - `400 Bad Request`: Invalid input data
+    - `401 Unauthorized`: Missing, invalid, or expired JWT token
+    - `403 Forbidden`: Access to another user's data
+    - `404 Not Found`: Resource not found or doesn't belong to user
+    `500 Internal Server Error`: Server error
+
+  version: 1.0.0
+  contact:
+    name: Todo List API
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication operations (registration, login, logout)
+  - name: Health
+    description: System health checks
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check endpoint
+      description: Verifies API and database connectivity. Does not require authentication.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  database:
+                    type: string
+                    example: connected
+        '503':
+          description: Service unavailable (database connection failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/sign-up:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      description: |
+        Creates a new user account with email and password.
+
+        **Validation Rules**:
+        - Email must be valid format (contains @ and domain)
+        - Password must be at least 8 characters
+        - Email must be unique (case-insensitive)
+
+        **Error Responses**:
+        - Returns 400 if email is invalid or password too short
+        - Returns 409 if email already registered
+
+        Does not require authentication (public endpoint).
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            examples:
+              valid:
+                summary: Valid registration request
+                value:
+                  email: user@example.com
+                  password: SecurePass123
+              invalid_email:
+                summary: Invalid email format
+                value:
+                  email: invalid-email
+                  password: SecurePass123
+              short_password:
+                summary: Password too short
+                value:
+                  email: user@example.com
+                  password: Short1
+      responses:
+        '200':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    detail: Invalid email format
+                short_password:
+                  summary: Password too short
+                  value:
+                    detail: Password must be at least 8 characters
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: Email already registered
+
+  /api/auth/sign-in:
+    post:
+      tags: [Authentication]
+      summary: Login with email and password
+      description: |
+        Authenticates a user and issues a JWT token.
+
+        **Behavior**:
+        - Validates email and password
+        - Issues JWT token valid for 7 days
+        - Returns user data and token
+
+        **Error Responses**:
+        - Returns 401 if credentials are invalid
+        - Generic error message (no information leakage)
+
+        Does not require authentication (public endpoint).
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+            examples:
+              valid:
+                summary: Valid login request
+                value:
+                  email: user@example.com
+                  password: SecurePass123
+      responses:
+        '200':
+          description: Login successful, JWT token issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: Invalid credentials
+
+  /api/auth/sign-out:
+    post:
+      tags: [Authentication]
+      summary: Logout current user
+      description: |
+        Invalidates the current session by clearing the JWT token.
+
+        **Note**: JWT tokens are stateless, so this operation primarily
+        instructs the client to discard the token. Tokens will naturally
+        expire after 7 days.
+
+        Requires authentication.
+      operationId: signOut
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: Not authenticated
+
+  /api/auth/session:
+    get:
+      tags: [Authentication]
+      summary: Get current session
+      description: |
+        Returns the current user's session data if authenticated.
+
+        **Use Case**: Verify authentication status and get user info.
+
+        Requires authentication.
+      operationId: getSession
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Session data returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: Not authenticated
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT authentication token issued by BetterAuth.
+
+        Include in `Authorization` header: `Bearer <token>`
+
+        Token contains `sub` claim with user_id.
+
+  schemas:
+    SignUpRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address (must be unique)
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          description: User password (minimum 8 characters)
+          example: SecurePass123
+      additionalProperties: false
+
+    SignUpResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Account created successfully
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique user identifier
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: user@example.com
+            created_at:
+              type: string
+              format: date-time
+              example: '2026-01-08T12:00:00Z'
+
+    SignInRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          description: User password
+          example: SecurePass123
+      additionalProperties: false
+
+    SignInResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT token valid for 7 days
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Unique user identifier
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: user@example.com
+        expires_at:
+          type: string
+          format: date-time
+          description: Token expiration timestamp (7 days from issuance)
+          example: '2026-01-15T12:00:00Z'
+
+    SessionResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+          example: true
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: user@example.com
+        expires_at:
+          type: string
+          format: date-time
+          example: '2026-01-15T12:00:00Z'
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: Invalid credentials
+      required:
+        - detail

@@ -1,9 +1,15 @@
-"""FastAPI application entry point."""
+"""FastAPI application entry point.
+
+[Task]: T015, T016
+[From]: specs/001-user-auth/quickstart.md
+"""
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import init_db, engine
+from core.middleware import JWTMiddleware
 from api.tasks import router as tasks_router
 
 # Configure structured logging
@@ -38,6 +44,19 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Add JWT middleware (protects all routes except public ones)
+# Excludes /api/auth/* for BetterAuth endpoints
+app.add_middleware(JWTMiddleware, excluded_paths=["/api/auth/"])
 
 # Include task router
 app.include_router(tasks_router)
