@@ -36,6 +36,7 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13+: Follow standard conventions
 
 ## Recent Changes
+- 001-backend-task-api: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 - 002-mcp-server-prompts: Added Python 3.13+ with FastMCP framework + FastMCP (MCP server framework), Pydantic (schema validation), watchfiles (file system watching)
 
 - 001-todo-cli-tui: Added Python 3.13+ + TUI library (textual, rich, or prompt_toolkit - to be determined in research phase)
