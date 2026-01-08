@@ -20,10 +20,11 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+**Per Principle VI (Monorepo Structure Standard)**:
+- **CLI/TUI (Phase 1)**: `cli/`, `tests/` at repository root
+- **Web app (Phases 2-3)**: `backend/`, `frontend/` with their own `src/` and `tests/`
+- **Full monorepo**: `cli/`, `backend/`, `frontend/` each with their own structure
+- Paths shown below assume CLI/TUI structure - adjust based on plan.md structure and phase
 
 <!-- 
   ============================================================================

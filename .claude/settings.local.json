@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(ls:*)",
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "Bash(.specify/scripts/bash/create-phr.sh:*)",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(uv sync:*)",
+      "Bash(timeout 5 uv run:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Skill(mcp-builder)",
+      "mcp__web-reader__webReader",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(uv init:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run python:*)",
+      "Bash(chmod:*)",
+      "Bash(SPECIFYPLUS_COMMANDS_DIR=\"/mnt/d/class/todo-list-hackathon/.claude/commands\" timeout 1:*)"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "specifyplus-prompts"
+  ]
+}

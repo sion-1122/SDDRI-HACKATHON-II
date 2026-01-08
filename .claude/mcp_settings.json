@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "specifyplus-prompts": {
+      "command": "uv",
+      "args": [
+        "run",
+        "python",
+        "mcp-servers/specifyplus-prompts/src/specifyplus_prompts/server.py"
+      ],
+      "env": {
+        "SPECIFYPLUS_COMMANDS_DIR": ".claude/commands"
+      }
+    }
+  }
+}
