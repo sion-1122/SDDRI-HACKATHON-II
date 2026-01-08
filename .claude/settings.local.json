@@ -28,7 +28,14 @@
       "Bash(PYTHONPATH=.. uv run pytest:*)",
       "Bash(PYTHONPATH=. uv run pytest:*)",
       "Bash(PYTHONPATH=. uv run python:*)",
-      "Bash(git --version:*)"
+      "Bash(git --version:*)",
+      "Bash(gh pr view:*)",
+      "WebSearch",
+      "Bash(test:*)",
+      "Bash(cat:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(echo:*)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
