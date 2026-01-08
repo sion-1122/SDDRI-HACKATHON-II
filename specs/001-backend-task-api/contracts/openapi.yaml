@@ -1,0 +1,420 @@
+openapi: 3.0.3
+info:
+  title: Todo List API
+  description: REST API for managing tasks in the Todo List application
+  version: 1.0.0
+  contact:
+    name: Todo List Team
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.todolist.example.com
+    description: Production server
+
+tags:
+  - name: tasks
+    description: Task management operations
+
+paths:
+  /api/{user_id}/tasks:
+    get:
+      tag: tasks
+      summary: List all tasks for a user
+      description: Retrieve a paginated list of tasks belonging to the specified user
+      operationId: listTasks
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID (temporary: from path parameter; future: from JWT)
+        - name: offset
+          in: query
+          description: Number of tasks to skip (for pagination)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Maximum number of tasks to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: completed
+          in: query
+          description: Filter by completion status (optional)
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskRead'
+        '400':
+          description: Bad request (invalid parameters)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tag: tasks
+      summary: Create a new task
+      description: Create a new task for the specified user
+      operationId: createTask
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '400':
+          description: Bad request (invalid data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/{user_id}/tasks/{task_id}:
+    get:
+      tag: tasks
+      summary: Get task details
+      description: Retrieve details of a specific task by ID
+      operationId: getTask
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Task ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tag: tasks
+      summary: Update a task
+      description: Update all fields of an existing task
+      operationId: updateTask
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '400':
+          description: Bad request (invalid data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tag: tasks
+      summary: Delete a task
+      description: Permanently delete a task by ID
+      operationId: deleteTask
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/{user_id}/tasks/{task_id}/complete:
+    patch:
+      tag: tasks
+      summary: Toggle task completion
+      description: Toggle the completed status of a task
+      operationId: toggleComplete
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Task completion toggled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TaskCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Task title
+          example: "Buy groceries"
+        description:
+          type: string
+          maxLength: 2000
+          description: Detailed task description
+          example: "Milk, eggs, bread, and butter"
+        completed:
+          type: boolean
+          default: false
+          description: Initial completion status
+
+    TaskUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Updated task title
+          example: "Buy groceries and cook dinner"
+        description:
+          type: string
+          maxLength: 2000
+          description: Updated task description
+          example: "Updated shopping list"
+        completed:
+          type: boolean
+          description: Updated completion status
+
+    TaskRead:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - completed
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique task identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_id:
+          type: string
+          format: uuid
+          description: Task owner's user ID
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        title:
+          type: string
+          description: Task title
+          example: "Buy groceries"
+        description:
+          type: string
+          description: Task description
+          example: "Milk, eggs, bread, and butter"
+          nullable: true
+        completed:
+          type: boolean
+          description: Task completion status
+          example: false
+        created_at:
+          type: string
+          format: date-time
+          description: Task creation timestamp (UTC)
+          example: "2026-01-08T20:45:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC)
+          example: "2026-01-08T21:00:00Z"
+
+    Error:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: "Task not found"
+
+    ValidationError:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: array
+          description: List of validation errors
+          items:
+            type: object
+            required:
+              - loc
+              - msg
+              - type
+            properties:
+              loc:
+                type: array
+                description: Error location (field path)
+                items:
+                  type: string
+                example: ["body", "title"]
+              msg:
+                type: string
+                description: Error message
+                example: "Field required"
+              type:
+                type: string
+                description: Error type
+                example: "value_error.missing"

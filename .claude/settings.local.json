@@ -20,7 +20,15 @@
       "Bash(uv run pytest:*)",
       "Bash(uv run python:*)",
       "Bash(chmod:*)",
-      "Bash(SPECIFYPLUS_COMMANDS_DIR=\"/mnt/d/class/todo-list-hackathon/.claude/commands\" timeout 1:*)"
+      "Bash(SPECIFYPLUS_COMMANDS_DIR=\"/mnt/d/class/todo-list-hackathon/.claude/commands\" timeout 1:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(uv add:*)",
+      "Bash(curl:*)",
+      "Bash(PYTHONPATH=.. uv run pytest:*)",
+      "Bash(PYTHONPATH=. uv run pytest:*)",
+      "Bash(PYTHONPATH=. uv run python:*)",
+      "Bash(git --version:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

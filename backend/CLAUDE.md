@@ -1,0 +1,128 @@
+# Backend Development Guidelines
+
+## Project Overview
+
+This directory contains the backend API for the Todo List application, built with Python FastAPI and SQLModel.
+
+## Technology Stack
+
+- **Language**: Python 3.13+
+- **Web Framework**: FastAPI (modern, high-performance web framework for building APIs)
+- **ORM**: SQLModel (combines SQLAlchemy and Pydantic for database interactions and validation)
+- **Database**: Neon Serverless PostgreSQL
+- **Package Manager**: UV
+
+## Project Structure
+
+```
+backend/
+├── src/                    # Application source code
+│   ├── models/            # SQLModel database models
+│   ├── api/               # API route handlers
+│   ├── services/          # Business logic layer
+│   ├── database.py        # Database connection and session management
+│   └── main.py            # FastAPI application entry point
+├── tests/                 # Test suite
+├── pyproject.toml         # UV project configuration
+└── CLAUDE.md             # This file
+```
+
+## Development Commands
+
+```bash
+cd backend
+
+# Install dependencies
+uv sync
+
+# Run development server
+uv run python src/main.py
+
+# Run tests
+uv run pytest tests/
+
+# Run with auto-reload during development
+uv run uvicorn src.main:app --reload
+
+# Check code quality
+uv run ruff check .
+```
+
+## API Endpoints
+
+The following REST API endpoints are implemented:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/{user_id}/tasks` | List all tasks for a user |
+| POST | `/api/{user_id}/tasks` | Create a new task |
+| GET | `/api/{user_id}/tasks/{id}` | Get task details |
+| PUT | `/api/{user_id}/tasks/{id}` | Update a task |
+| DELETE | `/api/{user_id}/tasks/{id}` | Delete a task |
+| PATCH | `/api/{user_id}/tasks/{id}/complete` | Toggle completion status |
+
+## Database Models
+
+### Task Model
+- `id`: Unique identifier (auto-generated)
+- `user_id`: Foreign key to user (for data segregation)
+- `title`: Task title (required, max 255 characters)
+- `description`: Task description (optional, max 2000 characters)
+- `completed`: Boolean status (default: false)
+- `created_at`: Timestamp of creation
+- `updated_at`: Timestamp of last update
+
+## Key Features
+
+- **FastAPI Auto-Documentation**: Interactive API docs available at `/docs` and `/redoc`
+- **Validation**: Automatic request/response validation via Pydantic
+- **Async Support**: Built-in async/await for high-performance I/O
+- **Type Safety**: Full type hints with SQLModel and Pydantic
+- **Database Migrations**: SQLModel schema management with Alembic (if needed)
+
+## Development Notes
+
+- Authentication is NOT enforced in this phase (user_id is passed as path parameter)
+- Database connection string should be provided via `DATABASE_URL` environment variable
+- Default pagination: 50 tasks per request, maximum 100
+- All timestamps are in UTC
+- Use dependency injection for database sessions
+
+## Environment Variables
+
+```bash
+DATABASE_URL=postgresql://user:password@host/database
+```
+
+## Testing Strategy
+
+- Unit tests for business logic
+- Integration tests for API endpoints
+- Database tests with test fixtures
+- Use pytest for test runner
+- Mock external dependencies where appropriate
+
+## Code Style
+
+- Follow Python 3.13+ standard conventions
+- Use type hints for all function signatures
+- Docstrings for all public functions and classes
+- Ruff for linting and formatting
+
+## Performance Considerations
+
+- Use database indexing on frequently queried fields (user_id, created_at)
+- Implement pagination for list endpoints to prevent large result sets
+- Use async database operations for better concurrency
+- Connection pooling for database connections
+
+## Documentation Resources
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [SQLModel Documentation](https://sqlmodel.tiangolo.com/)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
+
+## Related Specs
+
+- Feature Specification: [specs/001-backend-task-api/spec.md](../specs/001-backend-task-api/spec.md)
+- Project Constitution: [constitution.md](../.memory/constitution.md)
