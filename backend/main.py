@@ -1,16 +1,20 @@
 """FastAPI application entry point.
 
-[Task]: T015, T016
-[From]: specs/001-user-auth/quickstart.md
+[Task]: T047
+[From]: specs/001-user-auth/plan.md
 """
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from core.config import init_db, engine
-from core.middleware import JWTMiddleware
+from core.database import init_db, engine
+from core.config import get_settings
+from api.auth import router as auth_router
 from api.tasks import router as tasks_router
+
+settings = get_settings()
 
 # Configure structured logging
 logging.basicConfig(
@@ -40,7 +44,7 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title="Todo List API",
-    description="REST API for managing tasks",
+    description="REST API for managing tasks with JWT authentication",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -48,24 +52,26 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[settings.frontend_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Add JWT middleware (protects all routes except public ones)
-# Excludes /api/auth/* for BetterAuth endpoints
-app.add_middleware(JWTMiddleware, excluded_paths=["/api/auth/"])
-
-# Include task router
-app.include_router(tasks_router)
+# Include routers
+app.include_router(auth_router)  # Authentication endpoints
+app.include_router(tasks_router)  # Task management endpoints
 
 
 @app.get("/")
 async def root():
-    """Root endpoint for health check."""
-    return {"message": "Todo List API", "status": "running", "version": "1.0.0"}
+    """Root endpoint."""
+    return {
+        "message": "Todo List API",
+        "status": "running",
+        "version": "1.0.0",
+        "authentication": "JWT"
+    }
 
 
 @app.get("/health")
@@ -74,9 +80,12 @@ async def health_check():
 
     Verifies database connectivity and application status.
     Returns 503 if database is unavailable.
+
+    [Task]: T048
+    [From]: specs/001-user-auth/plan.md
     """
     from sqlmodel import select
-    from models.task import Task
+    from models.user import User
     from sqlmodel import Session
 
     # Try to get database session
@@ -84,7 +93,7 @@ async def health_check():
         # Create a simple query to test database connection
         with Session(engine) as session:
             # Execute a simple query (doesn't matter if it returns data)
-            session.exec(select(Task).limit(1))
+            session.exec(select(User).limit(1))
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -92,3 +101,24 @@ async def health_check():
             status_code=503,
             detail="Service unavailable - database connection failed"
         )
+
+
+# Global exception handler
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    """Global HTTP exception handler.
+
+    Returns consistent error format for all HTTP exceptions.
+
+    [Task]: T046
+    [From]: specs/001-user-auth/research.md
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "status_code": exc.status_code,
+                "detail": exc.detail
+            }
+        }
+    )

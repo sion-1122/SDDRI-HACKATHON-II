@@ -1,344 +1,373 @@
-# Research: User Authentication Implementation
+# Research: Authentication Technology Decisions
 
-**Feature**: 001-user-auth
-**Date**: 2026-01-08
+**Feature**: 001-user-auth  
+**Date**: 2026-01-09  
 **Phase**: Phase 0 - Research & Technology Decisions
 
 ## Overview
 
-This document captures research findings for implementing user authentication using BetterAuth on the frontend (Next.js 16) and JWT verification middleware on the backend (FastAPI).
+This document captures technology research and decisions for implementing the authentication system with clear separation: FastAPI backend handles ALL authentication logic, Next.js frontend is purely a UI client.
 
-## Technology Choices
+---
 
-### Frontend Authentication: BetterAuth
+## 1. Password Hashing Algorithm
 
-**Decision**: Use BetterAuth for Next.js 16 App Router with email/password authentication
+### Decision: bcrypt
 
 **Rationale**:
-- Native Next.js 16 App Router support with React Server Components
-- Built-in JWT plugin for custom backend integration
-- Email/password authentication with secure password hashing
-- Handles session management and token storage
-- Provides TypeScript types and excellent developer experience
-- No social login complexity (scope: email/password only)
+- Proven, battle-tested algorithm with long history of security
+- Automatic salt generation (no manual salt management)
+- Configurable cost factor (we'll use 12 for good balance of security vs performance)
+- Widely supported in Python via `passlib` library
+- Recommended by OWASP for password hashing
+- Resistant to rainbow table and brute force attacks
 
 **Alternatives Considered**:
-- **NextAuth.js (Auth.js)**: More mature but heavier, complex configuration for custom backends
-- **Supabase Auth**: Full backend service, overkill for our needs
-- **Clerk**: SaaS solution, adds external dependency and cost
 
-**Configuration**:
-```typescript
-// lib/auth.ts
-export const auth = betterAuth({
-  database: createPool({ connectionString: process.env.DATABASE_URL }),
-  emailAndPassword: {
-    enabled: true,
-    disableSignUp: false,
-    requireEmailVerification: false, // Out of scope per assumptions
-    minPasswordLength: 8,
-    maxPasswordLength: 128,
-    autoSignIn: false, // Redirect to login after registration
-  },
-  plugins: [
-    jwt({
-      expiresIn: "7d", // Token expiration per assumptions
-      secret: process.env.BETTER_AUTH_SECRET,
-    }),
-  ],
-});
+1. **argon2** - More modern and memory-hard, making it GPU/ASIC resistant
+   - Rejected because: Less mature Python ecosystem, more complex setup, bcrypt is sufficient for our use case
+
+2. **scrypt** - Memory-hard algorithm similar to argon2
+   - Rejected because: Less widely used, bcrypt provides adequate security for web application
+
+3. **PBKDF2** - NIST-standard key derivation function
+   - Rejected because: Less resistant to GPU attacks than bcrypt, older algorithm
+
+**Implementation**:
+```python
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+hashed_password = pwd_context.hash(password)
+verified = pwd_context.verify(plain_password, hashed_password)
 ```
 
-**JWT Token Structure**:
-- Claims: `sub` (user_id), `iat` (issued at), `exp` (expiration)
-- Algorithm: HS256 (HMAC with SHA-256)
-- Secret: Shared `BETTER_AUTH_SECRET` environment variable
+---
 
-### Backend JWT Verification: FastAPI Middleware
+## 2. JWT Library Selection
 
-**Decision**: Use FastAPI middleware with python-jose for JWT verification
+### Decision: python-jose
 
 **Rationale**:
-- FastAPI native middleware support
-- python-jose provides comprehensive JWT handling
-- Dependency injection pattern for flexible route protection
-- Type-safe with Pydantic integration
-- Handles signature verification, expiration checking, and claim extraction
+- Active maintenance and good community support
+- Comprehensive JWT functionality (sign, verify, encode, decode)
+- Supports multiple algorithms (HS256, RS256, etc.)
+- Good type hints and Python 3.13+ compatibility
+- Lightweight dependency footprint
+- Clear API design
 
 **Alternatives Considered**:
-- **Custom middleware without dependencies**: More code, maintenance burden
-- **Authlib**: Good but heavier dependency
-- **Passlib-only**: Doesn't handle JWT verification
 
-**Implementation Pattern**:
+1. **PyJWT** - Very popular, simple API
+   - Rejected because: Less actively maintained, fewer features, python-jose provides better developer experience
+
+2. **PyJWT Extras** - Extension to PyJWT
+   - Rejected because: Still based on PyJWT, python-jose is more comprehensive out of the box
+
+3. **authlib** - Comprehensive auth library
+   - Rejected because: Overkill for our needs (we only need JWT), heavier dependency
+
+**Implementation**:
 ```python
-# core/security.py
-class JWTManager:
-    @staticmethod
-    def verify_token(token: str) -> dict:
-        """Verify JWT token and return payload."""
-        payload = jwt.decode(
-            token,
-            os.getenv("BETTER_AUTH_SECRET"),
-            algorithms=["HS256"]
-        )
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=7)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=HS256)
+    return encoded_jwt
+
+def verify_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[HS256])
         return payload
-
-    @staticmethod
-    def get_user_id_from_token(token: str) -> str:
-        """Extract user_id from JWT token claims."""
-        payload = JWTManager.verify_token(token)
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return user_id
+    except JWTError:
+        return None
 ```
 
-**Middleware Strategy**:
-- Global JWT middleware for all `/api/*` routes
-- Excludes public endpoints (health check, docs, `/api/auth/*`)
-- Injects `user_id` into `request.state` for route handlers
-- Returns 401 Unauthorized for invalid/missing tokens
+---
 
-**Dependency Injection**:
+## 3. Frontend Token Storage
+
+### Decision: httpOnly Cookies with Server-Side Setting
+
+**Rationale**:
+- **Most secure option**: httpOnly cookies cannot be accessed by JavaScript (XSS protection)
+- **Backend sets cookie**: FastAPI backend sets cookie via Set-Cookie header
+- **Automatic sending**: Browser automatically includes cookie with requests (no manual Authorization header management)
+- **CSRF protection**: Add SameSite=Strict or SameSite=Lax for CSRF protection
+- **Persistent**: Cookies persist across browser sessions if configured with max-age
+
+**Alternatives Considered**:
+
+1. **localStorage** - Client-side storage accessible via JavaScript
+   - Rejected because: Vulnerable to XSS attacks (any JS can read localStorage), less secure
+
+2. **sessionStorage** - Similar to localStorage but cleared on tab close
+   - Rejected because: Still XSS-vulnerable, session persistence is poor UX
+
+3. **Memory storage** - Store token in React state or variable
+   - Rejected because: Lost on page refresh, terrible UX
+
+**Implementation** (Backend - FastAPI):
 ```python
-# core/deps.py
-async def get_current_user_id(request: Request) -> str:
-    """Get current user ID from JWT token."""
-    if not hasattr(request.state, 'user_id'):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return request.state.user_id
+from fastapi import Response
+from fastapi.responses import JSONResponse
 
-# Type alias for dependency
-CurrentUserDep = Annotated[str, Depends(get_current_user_id)]
-
-# Usage in routes
-@router.get("/api/tasks")
-def list_tasks(
-    session: SessionDep,
-    user_id: CurrentUserDep,  # Injected from JWT
-):
-    ...
+response = JSONResponse({"token": token, "user": user_data})
+response.set_cookie(
+    key="access_token",
+    value=token,
+    httponly=True,
+    secure=True,  # HTTPS only in production
+    samesite="lax",
+    max_age=7 * 24 * 60 * 60  # 7 days
+)
+return response
 ```
 
-## Integration Architecture
+**Frontend**: No special handling needed - browser automatically includes cookies
 
-### Authentication Flow
+---
 
-**Registration Flow**:
-1. User navigates to `/register` page
-2. Fills email and password form
-3. Frontend calls `authClient.signUp.email({ email, password })`
-4. BetterAuth creates user in database, hashes password with bcrypt
-5. Returns success, redirects to `/login`
-6. User enters credentials
-7. Frontend calls `authClient.signIn.email({ email, password })`
-8. BetterAuth verifies credentials, issues JWT token
-9. Token stored in httpOnly cookie (or localStorage)
-10. User redirected to main application page
+## 4. API Client Architecture
 
-**Login Flow**:
-1. User navigates to `/login` page
-2. Fills email and password form
-3. Frontend calls `authClient.signIn.email({ email, password })`
-4. BetterAuth verifies credentials, issues JWT token
-5. Token stored and sent with subsequent API requests
-6. User redirected to main application page
+### Decision: Custom Fetch Wrapper with Automatic Cookie Handling
 
-**Protected API Request Flow**:
-1. Frontend makes API call with JWT token
-2. JWT middleware intercepts request
-3. Extracts `Authorization: Bearer <token>` header
-4. Verifies signature using `BETTER_AUTH_SECRET`
-5. Extracts `user_id` from `sub` claim
-6. Injects `user_id` into `request.state`
-7. Route handler accesses `user_id` via dependency injection
-8. Returns 401 if any step fails
+**Rationale**:
+- Native fetch API (no additional dependencies)
+- Custom wrapper provides consistent error handling
+- Automatic cookie inclusion (browser handles httpOnly cookies)
+- Type-safe with TypeScript generics
+- Lightweight - minimal bundle size increase
+- Centralized JWT error handling (401 redirects)
 
-**Logout Flow**:
-1. User clicks logout button
-2. Frontend calls `authClient.signOut()`
-3. Token cleared from storage
-4. User redirected to `/login`
+**Alternatives Considered**:
 
-### Frontend-Backend Communication
+1. **axios** - Popular HTTP client with interceptors
+   - Rejected because: Adds 15KB+ to bundle, fetch API is sufficient for our needs
 
-**API Client Pattern**:
+2. **ky** - Modern fetch wrapper
+   - Rejected because: Additional dependency, custom wrapper gives us more control
+
+3. **React Query** - Data fetching library
+   - Rejected because: Overkill for simple auth API calls, can add later if needed for data fetching
+
+**Implementation** (Frontend):
 ```typescript
-// lib/api/client.ts
-export const apiClient = async ({ url, method, data, requiresAuth = true }) => {
-  const headers = { "Content-Type": "application/json" };
+// lib/api-client.ts
+export class ApiClient {
+  private baseURL: string;
 
-  if (requiresAuth) {
-    const { data: tokenData } = await authClient.token();
-    headers["Authorization"] = `Bearer ${tokenData.token}`;
+  constructor(baseURL: string) {
+    this.baseURL = baseURL;
   }
 
-  const response = await fetch(url, { method, headers, body: JSON.stringify(data) });
-  return response.json();
+  async post<T>(url: string, data: any): Promise<T> {
+    const response = await fetch(`${this.baseURL}${url}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',  // Include cookies automatically
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        window.location.href = '/login';
+      }
+      throw new ApiError(response.status, await response.text());
+    }
+
+    return response.json();
+  }
+}
+```
+
+---
+
+## 5. Form Validation Approach
+
+### Decision: Controlled Components with React State + Client-Side Validation
+
+**Rationale**:
+- Simple and straightforward for basic auth forms (3-4 fields max)
+- No additional library dependencies
+- Full control over validation timing and error display
+- React Server Components and Suspense make controlled components performant
+- Easy to integrate with backend validation errors
+
+**Alternatives Considered**:
+
+1. **react-hook-form** - Popular form library
+   - Rejected because: Overkill for simple auth forms, adds 25KB+, controlled components are sufficient
+
+2. **Formik** - Older form library
+   - Rejected because: Heavier than react-hook-form, older API patterns
+
+3. **No validation (backend only)** - Rely solely on backend validation
+   - Rejected because: Poor UX (round-trip for every error), slower feedback
+
+**Implementation**:
+```typescript
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
+const [errors, setErrors] = useState({ email: '', password: '' });
+
+const validate = () => {
+  const newErrors = { email: '', password: '' };
+  let isValid = true;
+
+  if (!email.includes('@')) {
+    newErrors.email = 'Invalid email format';
+    isValid = false;
+  }
+  if (password.length < 8) {
+    newErrors.password = 'Password must be at least 8 characters';
+    isValid = false;
+  }
+
+  setErrors(newErrors);
+  return isValid;
 };
 ```
 
-**Token Retrieval**:
-- BetterAuth provides `authClient.token()` method
-- Returns current JWT token or error
-- Client includes token in `Authorization: Bearer <token>` header
+---
 
-## Database Schema
+## 6. Database Migration Strategy
 
-### User Account Table
+### Decision: SQLModel Automatic Migrations with Manual Initial Creation
 
-**Table**: `users` (managed by BetterAuth)
+**Rationale**:
+- SQLModel provides simple create_engine() and table creation
+- For initial development, automatic table creation is sufficient
+- Production migrations can use Alembic when needed (more complex schema changes)
+- Simplicity for initial implementation
+- SQLModel is built on Pydantic, so models are type-safe
 
-**Schema**:
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+**Alternatives Considered**:
 
-CREATE INDEX idx_users_email ON users(email);
+1. **Alembic** - Full-featured database migration tool
+   - Rejected because: Overkill for initial simple User table, adds complexity. Can add later for production.
+
+2. **Manual SQL** - Write raw SQL CREATE TABLE statements
+   - Rejected because: Loses type safety, SQLModel provides better developer experience
+
+**Implementation** (Initial):
+```python
+from sqlmodel import SQLModel, create_engine, Session
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+engine = create_engine(DATABASE_URL)
+
+def init_db():
+    SQLModel.metadata.create_all(engine)
 ```
 
-**Fields**:
-- `id`: UUID primary key (BetterAuth default)
-- `email`: Unique email address (case-insensitive per FR-004)
-- `password_hash`: Bcrypt hash of password
-- `created_at`: Account creation timestamp
-- `updated_at`: Last update timestamp
+**Future**: Add Alembic for production schema migrations
 
-**Constraints**:
-- `email` unique constraint (prevents duplicates per FR-004)
-- `password` minimum 8 characters (enforced by BetterAuth per FR-003)
+---
 
-**Relationships**:
-- One user → Many tasks (via `tasks.user_id` foreign key)
+## 7. CORS Configuration
 
-## Security Considerations
+### Decision: FastAPI CORSMiddleware with Strict Origin Whitelist
 
-### JWT Security
+**Rationale**:
+- Security: Only allow requests from known frontend origins
+- Development: http://localhost:3000 (Next.js dev server)
+- Production: https://yourdomain.com (actual frontend domain)
+- Support credentials (cookies, authorization headers)
+- Prevents CSRF attacks from unauthorized origins
 
-**Secret Management**:
-- Shared `BETTER_AUTH_SECRET` between frontend and backend
-- Stored in environment variables (never in code)
-- Minimum 32 characters recommended
-- Must be identical on both services
+**Implementation**:
+```python
+from fastapi.middleware.cors import CORSMiddleware
 
-**Token Storage**:
-- httpOnly cookies (preferred, prevents XSS)
-- localStorage (fallback, accessible to JavaScript)
-- Token sent in `Authorization: Bearer <token>` header
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # Development
+        "https://yourdomain.com",  # Production
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+```
 
-**Token Expiration**:
-- 7 days per assumptions
-- No refresh token implementation (out of scope)
-- User must re-login after expiration
+**Security Considerations**:
+- Never use `allow_origins=["*"]` with credentials
+- Always specify exact origins in production
+- Use environment variables for production origins
 
-### Password Security
+---
 
-**Hashing**:
-- Bcrypt algorithm (handled by BetterAuth)
-- Automatic salt generation
-- Irreversible one-way hash
+## 8. Error Handling Pattern
 
-**Validation**:
-- Minimum 8 characters (FR-003)
-- Email format validation (FR-002)
-- No complexity requirements (per assumptions)
+### Decision: Standardized JSON Error Responses with Global Exception Handler
 
-### API Security
+**Rationale**:
+- Consistency: All errors follow same format
+- Security: Don't leak sensitive information (e.g., "user not found" vs "invalid credentials")
+- UX: Clear, actionable error messages
+- Development: Centralized error logging and monitoring
 
-**Protection**:
-- All `/api/*` routes require JWT (FR-007)
-- Public endpoints: `/`, `/health`, `/docs`, `/api/auth/*`
-- Returns 401 Unauthorized for invalid tokens (FR-010)
+**Error Response Format**:
+```json
+{
+  "detail": "Error message here"
+}
+```
 
-**User Isolation**:
-- All queries scoped to `user_id` from JWT (Constitution Principle IX)
-- Users cannot access other users' data (FR-009, FR-010)
-- 403 Forbidden or 404 Not Found for cross-user access attempts
+**Implementation**:
+```python
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse
 
-### Error Handling
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    # Generic error message for 401 (no information leakage)
+    if exc.status_code == 401:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Invalid credentials"}
+        )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+```
 
-**Generic Error Messages**:
-- Login failures: "Invalid credentials" (FR-015)
-- Registration failures: "Email already registered"
-- No information leakage about email existence
+**Error Messages**:
+- 400: "Invalid input data"
+- 401: "Invalid credentials" (generic, doesn't reveal if email exists)
+- 409: "Email already registered"
+- 500: "Internal server error" (logged server-side, generic message to user)
 
-## Performance Targets
+---
 
-### Success Criteria Mapping
+## Summary of Key Decisions
 
-- **SC-001**: Registration < 60 seconds → Target: < 30 seconds
-- **SC-002**: Login < 15 seconds → Target: < 5 seconds
-- **SC-006**: JWT verification < 50ms → Target: < 20ms
-- **SC-007**: 100 concurrent auth requests → Load test required
+| Decision | Technology | Rationale |
+|----------|-----------|-----------|
+| Password Hashing | bcrypt | Proven security, wide support |
+| JWT Library | python-jose | Active maintenance, comprehensive features |
+| Token Storage | httpOnly cookies | Most secure (XSS protection) |
+| API Client | Custom fetch wrapper | Lightweight, full control |
+| Form Validation | Controlled components | Simple, sufficient for auth forms |
+| Migrations | SQLModel automatic | Simplicity for initial dev |
+| CORS | Strict origin whitelist | Security, prevent CSRF |
+| Error Handling | Global exception handler | Consistency, security |
 
-### Optimization Strategies
+---
 
-**Frontend**:
-- React Server Components for initial page load
-- Client components only for forms (login, register)
-- Optimistic UI updates for better perceived performance
+## Next Steps
 
-**Backend**:
-- JWT signature verification is fast (< 10ms typical)
-- Database connection pooling (SQLModel)
-- Async route handlers for concurrent requests
-
-## Known Limitations
-
-### Out of Scope (Per Assumptions)
-
-1. **Email Verification**: Not implementing email confirmation flow
-2. **Password Reset**: No reset password functionality
-3. **Social Login**: OAuth providers not included
-4. **Two-Factor Authentication**: 2FA not implemented
-5. **Token Refresh**: No refresh token mechanism
-6. **Rate Limiting**: No attempt limiting for login
-7. **Session Management**: No concurrent session limits
-8. **Account Recovery**: No recovery flow
-
-### Future Enhancements
-
-1. Add email verification with confirmation links
-2. Implement password reset via email
-3. Add OAuth providers (Google, GitHub)
-4. Implement rate limiting for login attempts
-5. Add refresh token rotation
-6. Support concurrent session management
-7. Add account deletion and data export
-
-## Implementation Phases
-
-**Phase 1**: Core authentication (current scope)
-- User registration with email/password
-- User login with JWT issuance
-- JWT verification middleware
-- Protected route access control
-
-**Phase 2**: Enhanced security (future)
-- Email verification
-- Password reset
-- Rate limiting
-- Session management
-
-**Phase 3**: Advanced features (future)
-- Social login (OAuth)
-- Two-factor authentication
-- Account recovery
-- Audit logging
-
-## Conclusion
-
-BetterAuth with FastAPI JWT middleware provides a robust, secure authentication system that meets all functional requirements and success criteria. The implementation is straightforward, well-documented, and follows best practices for JWT-based authentication in full-stack applications.
-
-**Key Decisions**:
-- BetterAuth for frontend (Next.js native, excellent DX)
-- HS256 algorithm with shared secret (simple, secure)
-- Global JWT middleware with selective protection (flexible)
-- Dependency injection for user_id (type-safe, clean)
-- 7-day token expiration (per assumptions, no refresh needed)
+Proceed to Phase 1: Design & Contracts to create:
+1. `data-model.md` - Complete data structures and validation rules
+2. `contracts/openapi.yaml` - Full API specification
+3. `quickstart.md` - Developer setup guide

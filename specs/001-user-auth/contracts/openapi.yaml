@@ -2,17 +2,17 @@ openapi: 3.0.3
 info:
   title: Todo List API - Authentication Endpoints
   description: |
-    REST API for user authentication with BetterAuth and JWT verification.
+    REST API for user authentication with JWT verification.
 
     ## Authentication
-    All endpoints except `/api/auth/*` require JWT authentication via the `Authorization: Bearer <token>` header.
+    All endpoints except `/api/auth/*` require JWT authentication via the `Authorization: Bearer <token>` header
+    or httpOnly cookies.
 
     ## Error Responses
     - `400 Bad Request`: Invalid input data
     - `401 Unauthorized`: Missing, invalid, or expired JWT token
-    - `403 Forbidden`: Access to another user's data
-    - `404 Not Found`: Resource not found or doesn't belong to user
-    `500 Internal Server Error`: Server error
+    - `409 Conflict`: Email already registered
+    - `500 Internal Server Error`: Server error
 
   version: 1.0.0
   contact:
@@ -32,33 +32,6 @@ tags:
     description: System health checks
 
 paths:
-  /health:
-    get:
-      tags: [Health]
-      summary: Health check endpoint
-      description: Verifies API and database connectivity. Does not require authentication.
-      operationId: healthCheck
-      responses:
-        '200':
-          description: API is healthy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: healthy
-                  database:
-                    type: string
-                    example: connected
-        '503':
-          description: Service unavailable (database connection failed)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
   /api/auth/sign-up:
     post:
       tags: [Authentication]
@@ -129,6 +102,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 detail: Email already registered
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/auth/sign-in:
     post:
@@ -140,6 +119,7 @@ paths:
         **Behavior**:
         - Validates email and password
         - Issues JWT token valid for 7 days
+        - Sets httpOnly cookie with token
         - Returns user data and token
 
         **Error Responses**:
@@ -167,6 +147,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignInResponse'
+          headers:
+            Set-Cookie:
+              description: httpOnly cookie with JWT token
+              schema:
+                type: string
+                example: access_token=<jwt_token>; HttpOnly; Secure; SameSite=lax; Max-Age=604800; Path=/
         '401':
           description: Invalid credentials
           content:
@@ -175,6 +161,12 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 detail: Invalid credentials
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/auth/sign-out:
     post:
@@ -191,6 +183,7 @@ paths:
       operationId: signOut
       security:
         - BearerAuth: []
+        - CookieAuth: []
       responses:
         '200':
           description: Logout successful
@@ -202,6 +195,9 @@ paths:
                   success:
                     type: boolean
                     example: true
+                  message:
+                    type: string
+                    example: Logged out successfully
         '401':
           description: Not authenticated
           content:
@@ -224,6 +220,7 @@ paths:
       operationId: getSession
       security:
         - BearerAuth: []
+        - CookieAuth: []
       responses:
         '200':
           description: Session data returned
@@ -247,12 +244,21 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        JWT authentication token issued by BetterAuth.
+        JWT authentication token issued by FastAPI backend.
 
         Include in `Authorization` header: `Bearer <token>`
 
         Token contains `sub` claim with user_id.
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: |
+        JWT token stored in httpOnly cookie.
 
+        Automatically sent by browser with requests.
+
+components:
   schemas:
     SignUpRequest:
       type: object
@@ -270,33 +276,6 @@ components:
           minLength: 8
           description: User password (minimum 8 characters)
           example: SecurePass123
-      additionalProperties: false
-
-    SignUpResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: Account created successfully
-        user:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Unique user identifier
-              example: 550e8400-e29b-41d4-a716-446655440000
-            email:
-              type: string
-              format: email
-              example: user@example.com
-            created_at:
-              type: string
-              format: date-time
-              example: '2026-01-08T12:00:00Z'
 
     SignInRequest:
       type: object
@@ -314,7 +293,47 @@ components:
           minLength: 8
           description: User password
           example: SecurePass123
-      additionalProperties: false
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp (UTC)
+          example: '2026-01-09T12:00:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC)
+          example: '2026-01-09T12:00:00Z'
+
+    SignUpResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Account created successfully
+        user:
+          $ref: '#/components/schemas/User'
 
     SignInResponse:
       type: object
@@ -327,22 +346,12 @@ components:
           description: JWT token valid for 7 days
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         user:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              description: Unique user identifier
-              example: 550e8400-e29b-41d4-a716-446655440000
-            email:
-              type: string
-              format: email
-              example: user@example.com
+          $ref: '#/components/schemas/User'
         expires_at:
           type: string
           format: date-time
           description: Token expiration timestamp (7 days from issuance)
-          example: '2026-01-15T12:00:00Z'
+          example: '2026-01-16T12:00:00Z'
 
     SessionResponse:
       type: object
@@ -351,27 +360,18 @@ components:
           type: boolean
           example: true
         user:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-              example: 550e8400-e29b-41d4-a716-446655440000
-            email:
-              type: string
-              format: email
-              example: user@example.com
+          $ref: '#/components/schemas/User'
         expires_at:
           type: string
           format: date-time
-          example: '2026-01-15T12:00:00Z'
+          example: '2026-01-16T12:00:00Z'
 
     Error:
       type: object
+      required:
+        - detail
       properties:
         detail:
           type: string
           description: Human-readable error message
           example: Invalid credentials
-      required:
-        - detail

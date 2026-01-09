@@ -1,7 +1,7 @@
 # Specification Quality Checklist: User Authentication
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-01-08
+**Created**: 2026-01-09 (Updated)
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -29,29 +29,28 @@
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 
-## Validation Results
+## Architecture Clarity (Updated)
 
-### Content Quality: PASS
-- Specification focuses on WHAT (authentication flows) and WHY (security, multi-user isolation)
-- Written in business language without mentioning specific frameworks in requirements
-- All mandatory sections (User Scenarios, Requirements, Success Criteria) completed
-
-### Requirement Completeness: PASS
-- No [NEEDS CLARIFICATION] markers present
-- All requirements are testable (e.g., FR-007: "System MUST require JWT token for all API endpoints")
-- Success criteria are measurable and technology-agnostic (e.g., SC-001: "Users can complete registration in under 60 seconds")
-- 7 edge cases identified covering important boundary conditions
-- 12 assumptions documented to clarify scope boundaries
-- All user stories have clear acceptance scenarios
-
-### Feature Readiness: PASS
-- 4 prioritized user stories (3 at P1, 1 at P2) covering complete authentication lifecycle
-- Each user story has independent test criteria
-- Success criteria include quantitative metrics (time, percentage, counts) and qualitative measures
-- No technical implementation details in specification (JWT mentioned as user-facing token concept, not implementation)
+- [x] Frontend (Next.js) responsibilities clearly defined
+- [x] Backend (FastAPI) responsibilities clearly defined
+- [x] Data flow between frontend and backend documented
+- [x] Authentication logic ownership explicitly assigned to backend
+- [x] Frontend role limited to UI rendering and token storage
+- [x] JWT generation and verification explicitly backend-only
 
 ## Notes
 
-All validation items pass. The specification is ready for `/sp.plan` or `/sp.clarify`.
+✅ **All checklist items passed**. The specification has been updated to clearly separate frontend and backend responsibilities:
 
-**Status**: ✅ READY FOR NEXT PHASE
+**Key Clarifications Added**:
+1. Architecture Overview section explaining frontend vs backend split
+2. Frontend requirements (FR-001 to FR-010) focus on UI, token storage, and API calls
+3. Backend requirements (FR-011 to FR-024) cover all authentication logic
+4. Key Entities updated to emphasize backend ownership of JWT generation and user data
+5. Assumptions updated to clarify FastAPI manages JWT secret and signing
+
+**Architecture Principle**:
+- **Next.js**: Frontend-only, renders forms, stores tokens, sends requests
+- **FastAPI**: Handles ALL authentication logic (validation, hashing, JWT generation/verification, database)
+
+The specification is complete and ready for planning phase (`/sp.plan`).

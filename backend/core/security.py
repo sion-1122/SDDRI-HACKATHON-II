@@ -1,95 +1,147 @@
-"""JWT security utilities for FastAPI.
+"""Password hashing and JWT token management.
 
 [Task]: T011
-[From]: specs/001-user-auth/quickstart.md
+[From]: specs/001-user-auth/plan.md, specs/001-user-auth/research.md
 """
-import os
+import hashlib
+import bcrypt
+from datetime import datetime, timedelta
 from typing import Optional
+
 from jose import JWTError, jwt
 from fastapi import HTTPException, status
 
-# Get BetterAuth secret from environment
-BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET")
-if not BETTER_AUTH_SECRET:
-    raise ValueError("BETTER_AUTH_SECRET environment variable not set")
+from core.config import get_settings
 
-ALGORITHM = "HS256"
+settings = get_settings()
 
 
-class JWTManager:
-    """JWT token manager for BetterAuth integration."""
+def _pre_hash_password(password: str) -> bytes:
+    """Pre-hash password with SHA-256 to handle bcrypt's 72-byte limit.
 
-    @staticmethod
-    def verify_token(token: str) -> dict:
-        """Verify JWT token and return payload.
+    Bcrypt cannot hash passwords longer than 72 bytes. This function
+    pre-hashes the password with SHA-256 first, then bcrypt hashes that.
 
-        Args:
-            token: JWT token string
+    Args:
+        password: Plaintext password (any length)
 
-        Returns:
-            Decoded JWT payload
+    Returns:
+        SHA-256 hash of the password (always 32 bytes)
+    """
+    return hashlib.sha256(password.encode()).digest()
 
-        Raises:
-            HTTPException: If token is invalid or expired
-        """
-        try:
-            payload = jwt.decode(token, BETTER_AUTH_SECRET, algorithms=[ALGORITHM])
-            return payload
-        except JWTError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
 
-    @staticmethod
-    def get_user_id_from_token(token: str) -> str:
-        """Extract user_id from JWT token claims.
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a hash.
 
-        Args:
-            token: JWT token string
+    Args:
+        plain_password: Plaintext password to verify
+        hashed_password: Hashed password to compare against
 
-        Returns:
-            User ID string from token's 'sub' claim
+    Returns:
+        True if password matches hash, False otherwise
+    """
+    try:
+        # Pre-hash the plain password to match how it was stored
+        pre_hashed = _pre_hash_password(plain_password)
+        # Convert the stored hash to bytes
+        hashed_bytes = hashed_password.encode('utf-8')
+        # Verify using bcrypt directly
+        return bcrypt.checkpw(pre_hashed, hashed_bytes)
+    except Exception:
+        return False
 
-        Raises:
-            HTTPException: If token is invalid or user_id missing
-        """
-        payload = JWTManager.verify_token(token)
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials: user_id missing",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return user_id
 
-    @staticmethod
-    def get_token_from_header(authorization: str) -> str:
-        """Extract token from Authorization header.
+def get_password_hash(password: str) -> str:
+    """Hash a password using bcrypt with SHA-256 pre-hashing.
 
-        Args:
-            authorization: Authorization header value (e.g., "Bearer <token>")
+    This two-step approach:
+    1. Hash password with SHA-256 (handles any length)
+    2. Hash the SHA-256 hash with bcrypt (adds salt and security)
 
-        Returns:
-            Extracted JWT token
+    Args:
+        password: Plaintext password to hash (any length)
 
-        Raises:
-            HTTPException: If header format is invalid
-        """
-        try:
-            scheme, token = authorization.split()
-            if scheme.lower() != "bearer":
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication scheme",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-            return token
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header format",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+    Returns:
+        Hashed password (bcrypt hash with salt)
+
+    Example:
+        ```python
+        hashed = get_password_hash("my_password")
+        # Returns: $2b$12$... (bcrypt hash)
+        ```
+    """
+    # Pre-hash with SHA-256 to handle long passwords
+    pre_hashed = _pre_hash_password(password)
+
+    # Generate salt and hash with bcrypt
+    # Using 12 rounds (2^12 = 4096 iterations) for good security
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(pre_hashed, salt)
+
+    # Return as string
+    return hashed.decode('utf-8')
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create JWT access token.
+
+    Args:
+        data: Payload data to encode in token (typically {"sub": user_id})
+        expires_delta: Optional custom expiration time
+
+    Returns:
+        Encoded JWT token string
+
+    Example:
+        ```python
+        token = create_access_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(days=7)
+        )
+        ```
+    """
+    to_encode = data.copy()
+
+    # Set expiration time
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(days=settings.jwt_expiration_days)
+
+    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+
+    # Encode JWT
+    encoded_jwt = jwt.encode(
+        to_encode,
+        settings.jwt_secret,
+        algorithm=settings.jwt_algorithm
+    )
+    return encoded_jwt
+
+
+def decode_access_token(token: str) -> dict:
+    """Decode and verify JWT access token.
+
+    Args:
+        token: JWT token string to decode
+
+    Returns:
+        Decoded token payload
+
+    Raises:
+        HTTPException: If token is invalid or expired
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm]
+        )
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )

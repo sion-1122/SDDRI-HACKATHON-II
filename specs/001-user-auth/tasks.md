@@ -1,384 +1,488 @@
-# Tasks: User Authentication
+# Implementation Tasks: User Authentication
 
-**Input**: Design documents from `/specs/001-user-auth/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+**Feature**: 001-user-auth
+**Branch**: `001-user-auth`
+**Generated**: 2026-01-09
+**Source**: [spec.md](./spec.md), [plan.md](./plan.md)
 
-**Tests**: Tests are OPTIONAL for this feature. Test tasks are included for comprehensive coverage but can be skipped if not following TDD approach.
+## Overview
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+This document breaks down the implementation of the authentication system into atomic, dependency-ordered tasks. Tasks are organized by user story to enable independent implementation and testing.
 
-## Format: `[ID] [P?] [Story] Description`
+**Architecture**: FastAPI backend handles ALL authentication logic, Next.js frontend is pure UI client.
 
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3, US4)
-- Include exact file paths in descriptions
-
-## Path Conventions
-
-**Per Principle VI (Monorepo Structure Standard)**:
-- **Web app (Phase II)**: `backend/`, `frontend/` with their own structure
-- Paths follow the full monorepo structure defined in plan.md
-
----
-
-## Phase 1: Setup (Shared Infrastructure)
-
-**Purpose**: Project initialization and dependency installation
-
-- [ ] T001 Install backend dependencies (python-jose[cryptography], passlib[bcrypt]) in backend/ using uv
-- [ ] T002 [P] Install frontend better-auth package in frontend/ using pnpm
-- [ ] T003 [P] Create backend/core/ directory structure (security.py, middleware.py, deps.py, config.py)
-- [ ] T004 [P] Create frontend/lib/ directory structure (auth.ts, auth-client.ts)
-- [ ] T005 [P] Create frontend/app/api/auth/ directory for BetterAuth API route
-- [ ] T006 [P] Create frontend/components/auth/ directory for auth components
-- [ ] T007 [P] Create backend/tests/ directory for test files
-- [ ] T008 [P] Set BETTER_AUTH_SECRET environment variable in backend/.env (generate secure 32+ character string)
-- [ ] T009 [P] Set matching BETTER_AUTH_SECRET in frontend/.env.local (must match backend)
-- [ ] T010 [P] Set DATABASE_URL in both backend/.env and frontend/.env.local
-
----
-
-## Phase 2: Foundational (Blocking Prerequisites)
-
-**Purpose**: Core authentication infrastructure that MUST be complete before ANY user story can be implemented
-
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
-
-### Backend JWT Infrastructure
-
-- [ ] T011 Implement JWTManager class in backend/core/security.py with verify_token(), get_user_id_from_token(), and get_token_from_header() methods
-- [ ] T012 Implement JWTMiddleware in backend/core/middleware.py with dispatch() method for global JWT protection
-- [ ] T013 [P] Implement get_current_user_id dependency function in backend/core/deps.py
-- [ ] T014 [P] Create CurrentUserDep type alias in backend/core/deps.py for dependency injection
-- [ ] T015 Update backend/main.py to add JWTMiddleware to FastAPI app with excluded_paths for public endpoints
-- [ ] T016 [P] Add CORS middleware to backend/main.py allowing frontend origin (http://localhost:3000)
-- [ ] T017 Test JWT middleware by accessing /api/tasks endpoint (should return 401 without token)
-
-### Frontend BetterAuth Setup
-
-- [ ] T018 Configure BetterAuth with email/password and JWT plugin in frontend/lib/auth.ts
-- [ ] T019 [P] Create BetterAuth API route handler in frontend/app/api/auth/[...all]/route.ts
-- [ ] T020 [P] Create BetterAuth client instance in frontend/lib/auth-client.ts using createAuthClient()
-- [ ] T021 Test BetterAuth API route by accessing /api/auth/sign-in endpoint
-
-### Database Migration
-
-- [ ] T022 Create database migration to add user_id UUID column to tasks table with foreign key to users table
-- [ ] T023 Create database migration to add idx_tasks_user_id index on tasks.user_id column
-- [ ] T024 Update backend/models/task.py to add user_id: UUID field with foreign key to users table
-- [ ] T025 Handle migration of existing tasks (assign to default user or delete - decision documented in migration SQL)
-
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
-
----
-
-## Phase 3: User Story 1 - User Registration (Priority: P1) 🎯 MVP
-
-**Goal**: Enable new users to create accounts with email and password
-
-**Independent Test**: Navigate to /register page, fill out form with valid email and password (min 8 chars), submit form, verify account created and redirected to /login
-
-### Tests for User Story 1 (OPTIONAL - skip if not following TDD) ⚠️
-
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
-
-- [ ] T026 [P] [US1] Integration test in backend/tests/test_tasks_auth.py for user registration endpoint with valid email and password
-- [ ] T027 [P] [US1] Integration test in backend/tests/test_tasks_auth.py for duplicate email registration (should return 409)
-- [ ] T028 [P] [US1] Integration test in frontend/components/auth/__tests__/RegisterForm.test.tsx for registration form validation
-
-### Frontend Implementation for User Story 1
-
-- [ ] T029 [P] [US1] Create registration page component in frontend/app/register/page.tsx with email and password input fields
-- [ ] T030 [P] [US1] Implement client-side email validation in frontend/app/register/page.tsx (must contain @ and domain)
-- [ ] T031 [P] [US1] Implement client-side password validation in frontend/app/register/page.tsx (minimum 8 characters)
-- [ ] T032 [US1] Integrate BetterAuth signUp.email() method in frontend/app/register/page.tsx form submission handler
-- [ ] T033 [US1] Add error handling in frontend/app/register/page.tsx for registration failures (email already exists, invalid format)
-- [ ] T034 [US1] Add success handling in frontend/app/register/page.tsx (redirect to /login after registration)
-- [ ] T035 [P] [US1] Create RegisterForm component in frontend/components/auth/RegisterForm.tsx for reusable registration form
-- [ ] T036 [US1] Style registration page with responsive layout and clear error messages in frontend/app/register/page.tsx
-
-**Checkpoint**: At this point, User Story 1 (Registration) should be fully functional and testable independently
-
----
-
-## Phase 4: User Story 2 - User Login (Priority: P1) 🎯 MVP
-
-**Goal**: Enable returning users to authenticate and receive JWT tokens
-
-**Independent Test**: Navigate to /login page, enter registered email and password, submit form, verify JWT token issued and redirected to /dashboard
-
-### Tests for User Story 2 (OPTIONAL - skip if not following TDD) ⚠️
-
-- [ ] T037 [P] [US2] Integration test in backend/tests/test_tasks_auth.py for user login endpoint with valid credentials
-- [ ] T038 [P] [US2] Integration test in backend/tests/test_tasks_auth.py for login with invalid credentials (should return 401)
-- [ ] T039 [P] [US2] Integration test in frontend/components/auth/__tests__/LoginForm.test.tsx for login form submission
-
-### Frontend Implementation for User Story 2
-
-- [ ] T040 [P] [US2] Create login page component in frontend/app/login/page.tsx with email and password input fields
-- [ ] T041 [P] [US2] Implement client-side validation in frontend/app/login/page.tsx for email and password fields
-- [ ] T042 [US2] Integrate BetterAuth signIn.email() method in frontend/app/login/page.tsx form submission handler
-- [ ] T043 [US2] Add JWT token storage in frontend/app/login/page.tsx (BetterAuth handles storage automatically)
-- [ ] T044 [US2] Add error handling in frontend/app/login/page.tsx for login failures (generic "Invalid credentials" message per FR-015)
-- [ ] T045 [US2] Add success handling in frontend/app/login/page.tsx (redirect to /dashboard after login)
-- [ ] T046 [P] [US2] Create LoginForm component in frontend/components/auth/LoginForm.tsx for reusable login form
-- [ ] T047 [US2] Add link to /register page on frontend/app/login/page.tsx for new users
-
-**Checkpoint**: At this point, User Stories 1 (Registration) AND 2 (Login) should both work independently
-
----
-
-## Phase 5: User Story 3 - Protected Route Access (Priority: P1) 🎯 MVP
-
-**Goal**: Enforce JWT authentication on all API endpoints and protected frontend pages
-
-**Independent Test**: Make API request without JWT token (should return 401), make API request with valid JWT (should succeed), navigate to protected page without JWT (should redirect to /login)
-
-### Tests for User Story 3 (OPTIONAL - skip if not following TDD) ⚠️
-
-- [ ] T048 [P] [US3] Integration test in backend/tests/test_jwt.py for JWT verification with valid token (should succeed)
-- [ ] T049 [P] [US3] Integration test in backend/tests/test_jwt.py for JWT verification with invalid token (should return 401)
-- [ ] T050 [P] [US3] Integration test in backend/tests/test_jwt.py for JWT verification with expired token (should return 401)
-- [ ] T051 [P] [US3] Integration test in backend/tests/test_tasks_auth.py for protected endpoint without JWT (should return 401)
-- [ ] T052 [P] [US3] E2E test in frontend/e2e/auth.spec.ts for protected page redirecting to login when not authenticated
-
-### Backend Implementation for User Story 3
-
-- [ ] T053 [US3] Update backend/api/tasks.py to inject CurrentUserDep dependency into all route handlers (create_task, list_tasks, get_task, update_task, delete_task, toggle_complete)
-- [ ] T054 [US3] Update backend/api/tasks.py create_task() to use injected user_id from JWT (task.user_id = user_id)
-- [ ] T055 [US3] Update backend/api/tasks.py list_tasks() to filter tasks by injected user_id (WHERE user_id = $1)
-- [ ] T056 [US3] Update backend/api/tasks.py get_task() to verify task ownership (WHERE id = $1 AND user_id = $2, return 404 if not found)
-- [ ] T057 [US3] Update backend/api/tasks.py update_task() to verify task ownership before updating
-- [ ] T058 [US3] Update backend/api/tasks.py delete_task() to verify task ownership before deleting
-- [ ] T059 [US3] Update backend/api/tasks.py toggle_complete() to verify task ownership before toggling
-
-### Frontend Implementation for User Story 3
-
-- [ ] T060 [P] [US3] Create protected dashboard page in frontend/app/dashboard/page.tsx
-- [ ] T061 [US3] Implement session check in frontend/app/dashboard/page.tsx using authClient.getSession()
-- [ ] T062 [US3] Add redirect to /login in frontend/app/dashboard/page.tsx if session is not authenticated
-- [ ] T063 [P] [US3] Create frontend/lib/api/client.ts with apiClient() function for authenticated API calls
-- [ ] T064 [US3] Implement JWT token injection in frontend/lib/api/client.ts (authClient.token() gets JWT, added to Authorization header)
-- [ ] T065 [P] [US3] Create task service in frontend/lib/api/client.ts with getTasks(), createTask(), updateTask(), deleteTask() methods
-- [ ] T066 [US3] Test protected API access by calling /api/tasks with valid JWT token (should return empty array for new user)
-- [ ] T067 [US3] Test API without JWT token (should return 401 Unauthorized)
-
-**Checkpoint**: At this point, User Stories 1, 2, AND 3 should all work independently (core auth flow complete)
-
----
-
-## Phase 6: User Story 4 - User Logout (Priority: P2)
-
-**Goal**: Enable authenticated users to securely end their session
-
-**Independent Test**: Click logout button on /dashboard, verify token cleared and redirected to /login, verify accessing /api/tasks after logout returns 401
-
-### Tests for User Story 4 (OPTIONAL - skip if not following TDD) ⚠️
-
-- [ ] T068 [P] [US4] E2E test in frontend/e2e/auth.spec.ts for logout flow (login, click logout, verify redirect and token cleared)
-
-### Frontend Implementation for User Story 4
-
-- [ ] T069 [US4] Add logout button to frontend/app/dashboard/page.tsx
-- [ ] T070 [US4] Implement authClient.signOut() call in frontend/app/dashboard/page.tsx logout button handler
-- [ ] T071 [US4] Add redirect to /login in frontend/app/dashboard/page.tsx after successful logout
-- [ ] T072 [US4] Verify JWT token is cleared from storage after logout (BetterAuth handles this automatically)
-
-**Checkpoint**: At this point, ALL User Stories (1-4) should be independently functional
-
----
-
-## Phase 7: Polish & Cross-Cutting Concerns
-
-**Purpose**: Improvements that affect multiple user stories
-
-### Backend Polish
-
-- [ ] T073 [P] Add comprehensive error logging to backend/core/middleware.py for JWT verification failures
-- [ ] T074 [P] Add request ID tracking to backend/main.py for distributed tracing
-- [ ] T075 [P] Update backend/.env.example with BETTER_AUTH_SECRET and DATABASE_URL documentation
-- [ ] T076 [P] Create backend/CLAUDE.md with backend-specific development instructions
-- [ ] T077 Add health check endpoint in backend/main.py that tests database connectivity (returns 503 if DB unavailable)
-
-### Frontend Polish
-
-- [ ] T078 [P] Add loading states to frontend/app/register/page.tsx during registration API call
-- [ ] T079 [P] Add loading states to frontend/app/login/page.tsx during login API call
-- [ ] T080 [P] Add loading states to frontend/app/dashboard/page.tsx during session check
-- [ ] T081 [P] Improve error message display in frontend/app/register/page.tsx with styled error components
-- [ ] T082 [P] Improve error message display in frontend/app/login/page.tsx with styled error components
-- [ ] T083 [P] Update frontend/.env.local.example with BETTER_AUTH_SECRET, DATABASE_URL, and NEXT_PUBLIC_BASE_URL documentation
-- [ ] T084 [P] Create frontend/CLAUDE.md with frontend-specific development instructions
-
-### Documentation & Validation
-
-- [ ] T085 [P] Update root CLAUDE.md with authentication technology stack (BetterAuth, JWT)
-- [ ] T086 [P] Update specs/001-user-auth/quickstart.md with any implementation learnings or clarifications
-- [ ] T087 Run quickstart.md validation: follow quickstart guide from scratch to verify all steps work
-- [ ] T088 [P] Add comments to backend/core/security.py explaining JWT verification flow
-- [ ] T089 [P] Add comments to frontend/lib/auth.ts explaining BetterAuth configuration
-- [ ] T090 [P] Create README in backend/ directory with setup and run instructions
-- [ ] T091 [P] Create README in frontend/ directory with setup and run instructions
-
-### Cross-Functional Testing (OPTIONAL)
-
-- [ ] T092 [P] Write backend unit tests in backend/tests/test_jwt.py for JWTManager.verify_token() method
-- [ ] T093 [P] Write backend unit tests in backend/tests/test_jwt.py for JWTManager.get_user_id_from_token() method
-- [ ] T094 [P] Write backend integration tests in backend/tests/test_tasks_auth.py for data isolation (user 1 cannot access user 2's tasks)
-- [ ] T095 [P] Write frontend component tests in frontend/components/auth/__tests__/LoginForm.test.tsx for login form
-- [ ] T096 [P] Write frontend component tests in frontend/components/auth/__tests__/RegisterForm.test.tsx for registration form
-- [ ] T097 [P] Write E2E tests in frontend/e2e/auth.spec.ts for complete registration and login flow
-- [ ] T098 [P] Write E2E tests in frontend/e2e/auth.spec.ts for protected page access control
-
----
-
-## Dependencies & Execution Order
-
-### Phase Dependencies
-
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phases 3-6)**: All depend on Foundational phase completion
-  - User Story 1 (Registration): Can start after Foundational - No dependencies on other stories
-  - User Story 2 (Login): Can start after Foundational - No dependencies on other stories
-  - User Story 3 (Protected Routes): Can start after Foundational - Depends on US1 and US2 being conceptually complete (users must exist and be able to login)
-  - User Story 4 (Logout): Can start after Foundational - No dependencies on other stories
-- **Polish (Phase 7)**: Depends on all desired user stories being complete
-
-### User Story Dependencies
-
-- **User Story 1 (Registration)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (Login)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 3 (Protected Routes)**: Can start after Foundational (Phase 2) - Requires users to exist (US1) and login capability (US2), but can be developed in parallel if testing waits for US1/US2
-- **User Story 4 (Logout)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-
-### Within Each User Story
-
-- Tests (if included) MUST be written and FAIL before implementation (TDD approach)
-- Models before services (not applicable - BetterAuth manages user model)
-- Services before endpoints
-- Core implementation before integration
-- Story complete before moving to next priority
-
-### Parallel Opportunities
-
-- **Setup Phase**: All tasks marked [P] (T002-T010) can run in parallel
-- **Foundational Phase**:
-  - Backend tasks T013-T014 can run in parallel
-  - Backend task T017 can run in parallel with Frontend tasks T018-T021
-- **User Story 1**: Tests T026-T028 can run in parallel; Frontend tasks T029-T031 can run in parallel
-- **User Story 2**: Tests T037-T039 can run in parallel; Frontend tasks T040-T041 can run in parallel
-- **User Story 3**: Tests T048-T052 can run in parallel; Frontend tasks T060, T063-T065 can run in parallel
-- **User Story 4**: Test T068 can run in parallel with implementation
-- **Polish Phase**: Most tasks marked [P] can run in parallel
-- **Different user stories**: Can be worked on in parallel by different team members once Foundational phase is complete
-
----
-
-## Parallel Example: User Story 1 (Registration)
-
-```bash
-# Launch all tests for User Story 1 together (if following TDD):
-Agent 1: "Integration test for user registration endpoint with valid email and password in backend/tests/test_tasks_auth.py"
-Agent 2: "Integration test for duplicate email registration in backend/tests/test_tasks_auth.py"
-Agent 3: "Integration test for registration form validation in frontend/components/auth/__tests__/RegisterForm.test.tsx"
-
-# After tests fail, launch frontend components in parallel:
-Agent 1: "Create registration page component in frontend/app/register/page.tsx with email and password input fields"
-Agent 2: "Implement client-side email validation in frontend/app/register/page.tsx"
-Agent 3: "Implement client-side password validation in frontend/app/register/page.tsx"
-Agent 4: "Create RegisterForm component in frontend/components/auth/RegisterForm.tsx"
-```
-
----
-
-## Parallel Example: User Story 3 (Protected Routes)
-
-```bash
-# Launch all tests for User Story 3 together (if following TDD):
-Agent 1: "Integration test for JWT verification with valid token in backend/tests/test_jwt.py"
-Agent 2: "Integration test for JWT verification with invalid token in backend/tests/test_jwt.py"
-Agent 3: "Integration test for JWT verification with expired token in backend/tests/test_jwt.py"
-Agent 4: "Integration test for protected endpoint without JWT in backend/tests/test_tasks_auth.py"
-Agent 5: "E2E test for protected page redirecting to login when not authenticated in frontend/e2e/auth.spec.ts"
-
-# After tests fail, launch backend task route updates in parallel:
-Agent 1: "Update backend/api/tasks.py create_task() to use injected user_id from JWT"
-Agent 2: "Update backend/api/tasks.py list_tasks() to filter tasks by injected user_id"
-Agent 3: "Update backend/api/tasks.py get_task() to verify task ownership"
-Agent 4: "Update backend/api/tasks.py update_task() to verify task ownership before updating"
-Agent 5: "Update backend/api/tasks.py delete_task() to verify task ownership before deleting"
-Agent 6: "Update backend/api/tasks.py toggle_complete() to verify task ownership before toggling"
-```
-
----
-
-## Implementation Strategy
-
-### MVP First (User Stories 1-3 Only)
-
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
-3. Complete Phase 3: User Story 1 (Registration)
-4. Complete Phase 4: User Story 2 (Login)
-5. Complete Phase 5: User Story 3 (Protected Routes)
-6. **STOP and VALIDATE**: Test complete auth flow (register → login → access protected page with JWT)
-7. Deploy/demo MVP (core authentication complete)
-8. Add User Story 4 (Logout) as enhancement
-9. Complete Phase 7: Polish
-
-### Incremental Delivery
-
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 (Registration) → Test independently → Users can create accounts
-3. Add User Story 2 (Login) → Test independently → Users can login and get JWT tokens
-4. Add User Story 3 (Protected Routes) → Test independently → API endpoints protected, data isolated
-5. **MVP CHECKPOINT**: At this point, core authentication is complete (register, login, protected API)
-6. Add User Story 4 (Logout) → Test independently → Users can securely end sessions
-7. Add Polish → Documentation, error handling, loading states
-8. Each story adds value without breaking previous stories
-
-### Parallel Team Strategy
-
-With multiple developers:
-
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
-   - Developer A: User Story 1 (Registration)
-   - Developer B: User Story 2 (Login)
-   - Developer C: User Story 3 (Protected Routes) - Wait for US1/US2 conceptual completion
-3. Stories complete and integrate independently
-4. Team converges for Polish phase
-
----
-
-## Notes
-
-- **[P] tasks** = different files, no dependencies on incomplete tasks
-- **[Story] label** maps task to specific user story for traceability
-- **Each user story** should be independently completable and testable
-- **Tests are OPTIONAL** - skip test tasks if not following TDD approach
-- **BetterAuth manages users table** - no need to create user model manually
-- **JWT middleware is global** - protects all /api/* routes except /api/auth/*
-- **Data isolation is critical** - all queries MUST filter by user_id from JWT
-- **Commit after each task or logical group** - small commits make rollback easier
-- **Stop at any checkpoint** to validate story independently before proceeding
-- **Avoid**: vague tasks, same file conflicts, cross-story dependencies that break independence
+**Task Format**: `- [ ] [TaskID] [P?] [Story?] Description with file path`
+- `[P]` = Parallelizable (can run concurrently with other [P] tasks)
+- `[US1]`, `[US2]`, etc. = User Story label
 
 ---
 
 ## Task Summary
 
-- **Total Tasks**: 98 (78 implementation + 20 optional tests)
-- **Tasks per User Story**:
-  - Setup (Phase 1): 10 tasks
-  - Foundational (Phase 2): 15 tasks (BLOCKS all user stories)
-  - User Story 1 - Registration: 11 tasks (3 optional tests + 8 implementation)
-  - User Story 2 - Login: 11 tasks (3 optional tests + 8 implementation)
-  - User Story 3 - Protected Routes: 20 tasks (5 optional tests + 15 implementation)
-  - User Story 4 - Logout: 5 tasks (1 optional test + 4 implementation)
-  - Polish (Phase 7): 26 tasks (7 optional tests + 19 implementation)
-- **Parallel Opportunities**: ~50% of tasks can run in parallel within their phase/story
-- **Independent Test Criteria**: Each user story has clear independent test criteria defined
-- **MVP Scope**: User Stories 1-3 (Registration, Login, Protected Routes) - 56 tasks
-- **Format Validation**: ✅ ALL tasks follow checklist format with [ID], [P?] marker, [Story] label, and file paths
+- **Total Tasks**: 47
+- **Setup Tasks**: 8
+- **Foundational Tasks**: 6
+- **User Story 1 (Registration)**: 10 tasks
+- **User Story 2 (Login)**: 10 tasks
+- **User Story 3 (Protected Routes)**: 8 tasks
+- **User Story 4 (Logout)**: 3 tasks
+- **Polish**: 2 tasks
+
+**Parallel Opportunities**: 18 tasks are parallelizable within their phases
+
+---
+
+## Phase 1: Setup (Project Initialization)
+
+**Goal**: Initialize project structure and dependencies for both backend and frontend.
+
+### Backend Setup
+
+- [x] T001 Create backend directory structure: backend/{models,api,core,tests}
+- [x] T002 [P] Create backend/pyproject.toml with dependencies (fastapi, uvicorn, sqlmodel, python-jose, passlib, bcrypt, psycopg2-binary, pydantic, pytest)
+- [x] T003 [P] Create backend/.env.example with DATABASE_URL, JWT_SECRET, FRONTEND_URL, ENVIRONMENT
+- [x] T004 [P] Create backend/.gitignore with __pycache__, .env, .pytest_cache, *.pyc
+
+### Frontend Setup
+
+- [x] T005 Create frontend directory structure: frontend/src/{app,components,lib,types}
+- [x] T006 [P] Create frontend/package.json with dependencies (next, react, react-dom, typescript, tailwindcss, @types/react, @types/node)
+- [x] T007 [P] Create frontend/.env.local.example with NEXT_PUBLIC_API_URL
+- [x] T008 [P] Create frontend/.gitignore with .next, node_modules, .env.local, dist
+
+**Parallel Execution Example**:
+```bash
+# T002, T003, T004 can run in parallel
+# T006, T007, T008 can run in parallel
+```
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Goal**: Implement core infrastructure that all user stories depend on.
+
+### Backend Foundation
+
+- [x] T009 [P] Create backend/core/config.py with Settings class (pydantic-settings) for environment variables
+- [x] T010 [P] Create backend/core/database.py with engine, Session, get_session dependency
+- [x] T011 [P] Create backend/core/security.py with password hashing (passlib bcrypt) and JWT functions (python-jose)
+- [x] T012 Create backend/models/__init__.py and backend/api/__init__.py and backend/core/__init__.py
+
+### Frontend Foundation
+
+- [x] T013 [P] Create frontend/src/types/auth.ts with TypeScript types (User, SignUpRequest, SignInRequest, etc.)
+- [x] T014 [P] Create frontend/src/lib/api-client.ts with ApiClient class (fetch wrapper with credentials include)
+- [x] T015 Create frontend/tsconfig.json with strict mode and path aliases
+
+**Parallel Execution Example**:
+```bash
+# T009, T010, T011 can run in parallel
+# T013, T014 can run in parallel
+```
+
+---
+
+## Phase 3: User Story 1 - User Registration (P1)
+
+**Goal**: Enable new users to register accounts with email and password.
+
+**Independent Test**: User can navigate to /register, fill form, and see "Account created" message and redirect to /login.
+
+### Backend Implementation
+
+- [x] T016 [P] [US1] Create backend/models/user.py with User, UserBase, UserCreate, UserRead, UserLogin SQLModel classes
+- [x] T017 [P] [US1] Create backend/api/auth.py with FastAPI router
+- [x] T018 [US1] Implement POST /api/auth/sign-up endpoint in backend/api/auth.py (validate email format, check uniqueness, hash password, create user, return user data)
+- [x] T019 [US1] Implement email validation helper in backend/api/auth.py (check for @ symbol and domain)
+- [x] T020 [US1] Implement password validation in backend/api/auth.py (min 8 characters)
+- [x] T021 [US1] Create database initialization script backend/scripts/init_db.py (create tables)
+
+### Frontend Implementation
+
+- [x] T022 [P] [US1] Create frontend/src/app/register/page.tsx (server component rendering RegisterForm)
+- [x] T023 [US1] Create frontend/src/components/auth/RegisterForm.tsx (client component with email/password fields, validation, submit handler, error display, success message)
+- [x] T024 [US1] Implement form validation in RegisterForm.tsx (client-side email format, password length)
+- [x] T025 [US1] Integrate api-client in RegisterForm.tsx (POST /api/auth/sign-up, handle 409 error, redirect to /login on success)
+
+**Parallel Execution Example**:
+```bash
+# T016, T022 can run in parallel
+# After T016: T017, T018, T019, T020, T021
+# After T022: T023, T024, T025
+```
+
+---
+
+## Phase 4: User Story 2 - User Login (P1)
+
+**Goal**: Enable registered users to login and receive JWT tokens.
+
+**Independent Test**: User can navigate to /login, enter credentials, receive JWT token, and redirect to dashboard.
+
+### Backend Implementation
+
+- [x] T026 [US2] Implement GET /api/auth/session endpoint in backend/api/auth.py (verify JWT, return user data or 401)
+- [x] T027 [US2] Implement POST /api/auth/sign-in endpoint in backend/api/auth.py (verify credentials, generate JWT, set httpOnly cookie, return token and user)
+- [x] T028 [US2] Implement verify_password function in backend/core/security.py (bcrypt verify)
+- [x] T029 [US2] Implement create_access_token function in backend/core/security.py (JWT with 7-day expiration)
+- [x] T030 [US2] Implement get_user_by_email helper in backend/api/auth.py (query database)
+
+### Frontend Implementation
+
+- [x] T031 [P] [US2] Create frontend/src/app/login/page.tsx (server component rendering LoginForm)
+- [x] T032 [US2] Create frontend/src/components/auth/LoginForm.tsx (client component with email/password, validation, submit handler, error display)
+- [x] T033 [US2] Implement form validation in LoginForm.tsx (client-side email format, password length)
+- [x] T034 [US2] Integrate api-client in LoginForm.tsx (POST /api/auth/sign-in, handle 401 error, store token via cookie set by backend, redirect to /dashboard)
+- [x] T035 [US2] Create frontend/src/app/dashboard/page.tsx (protected page example)
+
+**Parallel Execution Example**:
+```bash
+# T031, T026 can run in parallel
+# After T031: T032, T033, T034, T035
+# After T026: T027, T028, T029, T030
+```
+
+---
+
+## Phase 5: User Story 3 - Protected Route Access (P1)
+
+**Goal**: Verify JWT tokens on all protected endpoints and enforce authentication.
+
+**Independent Test**: API request without token returns 401, request with valid token succeeds.
+
+### Backend Implementation
+
+- [x] T036 [P] [US3] Create backend/api/deps.py with get_current_user dependency (extract JWT from cookie or header, verify signature, return user or 401)
+- [x] T037 [P] [US3] Implement JWT verification middleware in backend/api/deps.py (decode token, extract user_id, query database)
+- [x] T038 [US3] Create example protected endpoint GET /api/users/me in backend/api/auth.py (requires get_current_user dependency)
+- [x] T039 [US3] Add CORS middleware to backend/main.py (allow origins from FRONTEND_URL, allow credentials)
+
+### Frontend Implementation
+
+- [x] T040 [P] [US3] Create frontend/src/lib/auth.ts with session check utilities (getServerSession, useSession hook)
+- [x] T041 [US3] Implement ProtectedRoute wrapper component in frontend/src/components/auth/ProtectedRoute.tsx (check session, redirect to /login if not authenticated)
+- [x] T042 [US3] Update frontend/src/app/dashboard/page.tsx to use ProtectedRoute wrapper
+
+**Parallel Execution Example**:
+```bash
+# T036, T037, T040 can run in parallel
+# After T036: T038
+# After T040: T041, T042
+```
+
+---
+
+## Phase 6: User Story 4 - User Logout (P2)
+
+**Goal**: Enable users to logout by clearing JWT tokens.
+
+**Independent Test**: User clicks logout, token cleared, redirected to /login.
+
+### Backend Implementation
+
+- [x] T043 [US4] Implement POST /api/auth/sign-out endpoint in backend/api/auth.py (return success message, clear httpOnly cookie)
+
+### Frontend Implementation
+
+- [x] T044 [US4] Implement logout function in frontend/src/lib/auth.ts (call POST /api/auth/sign-out, clear cookie, redirect to /login)
+- [x] T045 [US4] Add logout button to frontend/src/app/dashboard/page.tsx (call logout function)
+
+---
+
+## Phase 7: Polish & Cross-Cutting Concerns
+
+**Goal**: Add final touches and ensure production readiness.
+
+### Backend Polish
+
+- [x] T046 [P] Add global exception handler to backend/main.py (catch 401, return consistent error format)
+- [x] T047 [P] Create backend/main.py with FastAPI app, include all routers, CORS, exception handlers
+- [x] T048 [P] Add health check endpoint GET /health in backend/main.py
+
+### Frontend Polish
+
+- [x] T049 [P] Update frontend/src/app/layout.tsx with basic HTML structure and metadata
+- [x] T050 [P] Add error page frontend/src/app/error.tsx (handle errors gracefully)
+
+**Parallel Execution Example**:
+```bash
+# T046, T047, T048, T049, T050 all parallel
+```
+
+---
+
+## Dependencies
+
+### Phase Dependencies
+
+```
+Phase 1 (Setup)
+    ↓
+Phase 2 (Foundational)
+    ↓
+Phase 3 (US1 - Registration) ← Independent
+    ↓
+Phase 4 (US2 - Login) ← Depends on US1 (need users to log in)
+    ↓
+Phase 5 (US3 - Protected Routes) ← Depends on US2 (need JWT tokens to protect)
+    ↓
+Phase 6 (US4 - Logout) ← Depends on US2 (need authenticated users to logout)
+    ↓
+Phase 7 (Polish)
+```
+
+### Task Dependencies Within Phases
+
+**Phase 3 (US1 - Registration)**:
+- T016 must complete before T017, T018
+- T022 must complete before T023, T024, T025
+
+**Phase 4 (US2 - Login)**:
+- T026, T028, T029, T030 must complete before T027
+- T031 must complete before T032, T033, T034, T035
+
+**Phase 5 (US3 - Protected Routes)**:
+- T036, T037 must complete before T038
+- T040 must complete before T041, T042
+
+**Phase 6 (US4 - Logout)**:
+- T043 must complete before T044
+- T044 must complete before T045
+
+---
+
+## Parallel Execution Strategy
+
+### Maximum Parallelization
+
+**Phase 1**: 4 parallel groups
+- Group 1: T002, T003, T004 (backend config)
+- Group 2: T006, T007, T008 (frontend config)
+
+**Phase 2**: 2 parallel groups
+- Group 1: T009, T010, T011 (backend foundation)
+- Group 2: T013, T014 (frontend foundation)
+
+**Phase 3 (US1)**: 2 parallel tracks
+- Track 1: T016 → (T017, T019, T020) → T018
+- Track 2: T022 → T023 → (T024, T025)
+
+**Phase 4 (US2)**: 2 parallel tracks
+- Track 1: (T026, T028, T029, T030) → T027
+- Track 2: T031 → T032 → (T033, T034, T035)
+
+**Phase 5 (US3)**: 2 parallel tracks
+- Track 1: (T036, T037) → T038
+- Track 2: T040 → (T041, T042)
+
+**Phase 6 (US4)**: Sequential
+- T043 → T044 → T045
+
+**Phase 7**: 5 parallel tasks
+- T046, T047, T048, T049, T050
+
+---
+
+## Implementation Strategy
+
+### MVP Scope (Minimum Viable Product)
+
+**Delivers**: User registration and login (Phases 1-4)
+
+**Tasks**: T001-T035 (35 tasks)
+
+**Timeline**:
+- Phase 1-2: 2 days (setup and foundation)
+- Phase 3: 2 days (registration)
+- Phase 4: 2 days (login)
+- **Total**: 6 days
+
+### Incremental Delivery
+
+**Sprint 1**: Registration (Phase 3)
+- Users can register accounts
+- Independent test: Register new user
+
+**Sprint 2**: Login (Phase 4)
+- Users can login and receive tokens
+- Independent test: Login and see dashboard
+
+**Sprint 3**: Protected Routes (Phase 5)
+- All endpoints protected by JWT
+- Independent test: Access protected endpoint with token
+
+**Sprint 4**: Logout (Phase 6)
+- Users can logout
+- Independent test: Logout and verify token cleared
+
+**Sprint 5**: Polish (Phase 7)
+- Production-ready error handling
+- Independent test: All error cases return consistent format
+
+---
+
+## Testing Strategy
+
+### Backend Tests (pytest)
+
+```bash
+# Unit tests
+backend/tests/test_security.py  # Test password hashing, JWT functions
+backend/tests/test_auth_api.py  # Test auth endpoints
+
+# Integration tests
+backend/tests/test_integration.py  # Test full auth flows
+```
+
+### Frontend Tests (React Testing Library)
+
+```bash
+# Component tests
+frontend/tests/login.test.tsx     # Test LoginForm
+frontend/tests/register.test.tsx  # Test RegisterForm
+```
+
+### End-to-End Tests (Playwright)
+
+```bash
+# Full flow tests
+- Register new user
+- Login with credentials
+- Access protected page
+- Logout
+```
+
+---
+
+## File Checklist
+
+### Backend Files (19 files)
+
+```
+backend/
+├── pyproject.toml                    # T002
+├── .env.example                       # T003
+├── .gitignore                         # T004
+├── main.py                            # T047
+├── models/
+│   ├── __init__.py                   # T012
+│   └── user.py                       # T016
+├── api/
+│   ├── __init__.py                   # T012
+│   ├── auth.py                       # T017, T018, T026, T027, T043
+│   └── deps.py                       # T036
+├── core/
+│   ├── __init__.py                   # T012
+│   ├── config.py                     # T009
+│   ├── database.py                   # T010
+│   └── security.py                   # T011, T028, T029
+├── scripts/
+│   └── init_db.py                    # T021
+└── tests/
+    ├── test_security.py              # (future)
+    ├── test_auth_api.py              # (future)
+    └── test_integration.py           # (future)
+```
+
+### Frontend Files (13 files)
+
+```
+frontend/
+├── package.json                       # T006
+├── .env.local.example                 # T007
+├── .gitignore                         # T008
+├── tsconfig.json                      # T015
+├── src/
+    ├── types/
+    │   └── auth.ts                    # T013
+    ├── lib/
+    │   ├── api-client.ts              # T014
+    │   └── auth.ts                    # T040, T044
+    ├── components/
+    │   └── auth/
+    │       ├── RegisterForm.tsx       # T023
+    │       ├── LoginForm.tsx          # T032
+    │       └── ProtectedRoute.tsx     # T041
+    ├── app/
+    │   ├── layout.tsx                 # T049
+    │   ├── register/
+    │   │   └── page.tsx               # T022
+    │   ├── login/
+    │   │   └── page.tsx               # T031
+    │   ├── dashboard/
+    │   │   └── page.tsx               # T035, T042, T045
+    │   └── error.tsx                  # T050
+    └── tests/
+        ├── login.test.tsx             # (future)
+        └── register.test.tsx          # (future)
+```
+
+---
+
+## Acceptance Criteria by Story
+
+### User Story 1 - Registration
+
+- [ ] User can access /register page
+- [ ] User can submit email and password
+- [ ] System validates email format (contains @)
+- [ ] System validates password length (min 8 chars)
+- [ ] System creates user in database
+- [ ] System shows "Account created" message
+- [ ] System redirects to /login
+- [ ] System returns 409 if email already exists
+- [ ] System hashes password with bcrypt
+- [ ] System returns user data (excluding password)
+
+### User Story 2 - Login
+
+- [ ] User can access /login page
+- [ ] User can submit email and password
+- [ ] System verifies email exists
+- [ ] System verifies password matches hash
+- [ ] System generates JWT token (7-day expiry)
+- [ ] System sets httpOnly cookie with token
+- [ ] System returns token and user data
+- [ ] System redirects to /dashboard
+- [ ] System returns 401 if credentials invalid
+- [ ] System includes token in cookie automatically
+
+### User Story 3 - Protected Routes
+
+- [ ] Request without token returns 401
+- [ ] Request with expired token returns 401
+- [ ] Request with invalid token returns 401
+- [ ] Request with valid token succeeds
+- [ ] System extracts user_id from token
+- [ ] System scopes data to authenticated user
+- [ ] System redirects unauthenticated to /login
+- [ ] System allows authenticated to access protected pages
+
+### User Story 4 - Logout
+
+- [ ] User can click logout button
+- [ ] System calls POST /api/auth/sign-out
+- [ ] System clears httpOnly cookie
+- [ ] System redirects to /login
+- [ ] System returns success message
+- [ ] Protected pages redirect to /login after logout
+
+---
+
+## Next Steps
+
+1. **Start with MVP**: Complete Phases 1-4 (Tasks T001-T035)
+2. **Test Registration**: Verify US1 acceptance criteria
+3. **Test Login**: Verify US2 acceptance criteria
+4. **Add Protection**: Complete Phase 5 (US3)
+5. **Add Logout**: Complete Phase 6 (US4)
+6. **Production Polish**: Complete Phase 7
+
+**Ready to implement**: Execute tasks sequentially, or use parallel execution groups for faster development.
+
+---
+
+**Total Tasks**: 50
+**Estimated Effort**: 8-10 days (depending on parallelization)
+**Team Size**: 1-2 developers (full-stack)
