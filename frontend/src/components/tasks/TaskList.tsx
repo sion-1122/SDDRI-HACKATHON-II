@@ -23,6 +23,8 @@ export function TaskList({ tasks }: TaskListProps) {
   const searchParams = useSearchParams();
   const hasActiveFilters = searchParams.has('status') || searchParams.has('search');
 
+  console.log(tasks)
+
   // Handle undefined or null tasks
   if (!tasks || tasks.length === 0) {
     if (hasActiveFilters) {

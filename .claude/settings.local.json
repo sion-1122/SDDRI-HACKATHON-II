@@ -35,7 +35,10 @@
       "Bash(cat:*)",
       "Bash(git ls-tree:*)",
       "Bash(echo:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(pnpm add:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash drop:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
