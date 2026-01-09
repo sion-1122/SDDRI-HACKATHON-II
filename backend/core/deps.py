@@ -3,6 +3,7 @@
 [Task]: T013, T014
 [From]: specs/001-user-auth/quickstart.md
 """
+import uuid
 from typing import Annotated, Optional
 from sqlmodel import Session
 from fastapi import Depends, HTTPException, status
@@ -31,18 +32,18 @@ SessionDep = Annotated[Session, Depends(get_session)]
 async def get_current_user_id(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     request: StarletteRequest = None
-) -> str:
+) -> uuid.UUID:
     """Get current user ID from JWT token.
 
     Extracts JWT token from Authorization header or httpOnly cookie,
-    verifies it, and returns user_id.
+    verifies it, and returns user_id as UUID.
 
     Args:
         credentials: HTTP Bearer credentials from Authorization header
         request: Starlette request object to access cookies
 
     Returns:
-        Current authenticated user's ID
+        Current authenticated user's ID as UUID
 
     Raises:
         HTTPException: If token is invalid, expired, or missing
@@ -70,17 +71,25 @@ async def get_current_user_id(
     try:
         # Decode and verify token
         payload = decode_access_token(token)
-        user_id = payload.get("sub")
+        user_id_str = payload.get("sub")
 
-        if not user_id:
+        if not user_id_str:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token: user_id missing"
             )
 
+        # Convert string to UUID for database comparison
+        user_id = uuid.UUID(user_id_str)
+
         return user_id
     except HTTPException:
         raise
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token: malformed user_id"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,4 +98,4 @@ async def get_current_user_id(
 
 
 # Type alias for JWT authentication dependency
-CurrentUserDep = Annotated[str, Depends(get_current_user_id)]
+CurrentUserDep = Annotated[uuid.UUID, Depends(get_current_user_id)]
