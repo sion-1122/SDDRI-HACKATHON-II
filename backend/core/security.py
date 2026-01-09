@@ -3,6 +3,7 @@
 [Task]: T011
 [From]: specs/001-user-auth/plan.md, specs/001-user-auth/research.md
 """
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -18,6 +19,21 @@ settings = get_settings()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _pre_hash_password(password: str) -> bytes:
+    """Pre-hash password with SHA-256 to handle bcrypt's 72-byte limit.
+
+    Bcrypt cannot hash passwords longer than 72 bytes. This function
+    pre-hashes the password with SHA-256 first, then bcrypt hashes that.
+
+    Args:
+        password: Plaintext password (any length)
+
+    Returns:
+        SHA-256 hash of the password (always 32 bytes)
+    """
+    return hashlib.sha256(password.encode()).digest()
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash.
 
@@ -28,19 +44,35 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if password matches hash, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    # Pre-hash the plain password to match how it was stored
+    pre_hashed = _pre_hash_password(plain_password)
+    return pwd_context.verify(pre_hashed, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password using bcrypt.
+    """Hash a password using bcrypt with SHA-256 pre-hashing.
+
+    This two-step approach:
+    1. Hash password with SHA-256 (handles any length)
+    2. Hash the SHA-256 hash with bcrypt (adds salt and security)
 
     Args:
-        password: Plaintext password to hash
+        password: Plaintext password to hash (any length)
 
     Returns:
         Hashed password (bcrypt hash with salt)
+
+    Example:
+        ```python
+        hashed = get_password_hash("my_password")
+        # Returns: $2b$12$... (bcrypt hash)
+        ```
     """
-    return pwd_context.hash(password)
+    # Pre-hash with SHA-256 to handle long passwords
+    pre_hashed = _pre_hash_password(password)
+
+    # Hash the pre-hash with bcrypt
+    return pwd_context.hash(pre_hashed)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
