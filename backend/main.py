@@ -7,6 +7,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from core.database import init_db, engine
 from core.config import get_settings
@@ -112,9 +113,12 @@ async def http_exception_handler(request, exc):
     [Task]: T046
     [From]: specs/001-user-auth/research.md
     """
-    return {
-        "error": {
-            "status_code": exc.status_code,
-            "detail": exc.detail
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "status_code": exc.status_code,
+                "detail": exc.detail
+            }
         }
-    }
+    )
