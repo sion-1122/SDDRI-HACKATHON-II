@@ -13,8 +13,6 @@ import type {
 
 import type {
   TaskListResponse,
-  TaskResponse,
-  DeleteTaskResponse,
 } from '@/types/api';
 
 import { apiClient } from '@/lib/api/client';
@@ -82,37 +80,34 @@ export class TaskApiClient implements TaskApi {
    * Create a new task
    */
   async createTask(data: TaskCreate): Promise<Task> {
-    const response = await this.request<TaskResponse>('/api/tasks', {
+    return this.request<Task>('/api/tasks', {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    return response.task;
   }
 
   /**
    * Get a specific task
    */
   async getTask(taskId: string): Promise<Task> {
-    const response = await this.request<TaskResponse>(`/api/tasks/${taskId}`);
-    return response.task;
+    return this.request<Task>(`/api/tasks/${taskId}`);
   }
 
   /**
    * Update a task
    */
   async updateTask(taskId: string, data: TaskUpdate): Promise<Task> {
-    const response = await this.request<TaskResponse>(`/api/tasks/${taskId}`, {
+    return this.request<Task>(`/api/tasks/${taskId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    return response.task;
   }
 
   /**
    * Delete a task
    */
   async deleteTask(taskId: string): Promise<{ ok: boolean }> {
-    return this.request<DeleteTaskResponse>(`/api/tasks/${taskId}`, {
+    return this.request<{ ok: boolean }>(`/api/tasks/${taskId}`, {
       method: 'DELETE',
     });
   }
@@ -121,13 +116,12 @@ export class TaskApiClient implements TaskApi {
    * Toggle task completion status
    */
   async toggleComplete(taskId: string): Promise<Task> {
-    const response = await this.request<TaskResponse>(
+    return this.request<Task>(
       `/api/tasks/${taskId}/complete`,
       {
         method: 'PATCH',
       }
     );
-    return response.task;
   }
 }
 
