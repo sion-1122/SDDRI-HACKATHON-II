@@ -52,9 +52,25 @@ class JWTMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.public_paths:
             return await call_next(request)
 
-        # Extract Authorization header
+        # Extract token from Authorization header OR httpOnly cookie
+        token = None
+
+        # Try Authorization header first
         authorization = request.headers.get("Authorization")
-        if not authorization:
+        if authorization:
+            try:
+                token = JWTManager.get_token_from_header(authorization)
+            except:
+                pass  # Fall through to cookie
+
+        # If no token in header, try httpOnly cookie
+        if not token:
+            auth_token = request.cookies.get("auth_token")
+            if auth_token:
+                token = auth_token
+
+        # If still no token, return 401
+        if not token:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"detail": "Not authenticated"},
@@ -63,7 +79,6 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         try:
             # Verify token and extract user_id
-            token = JWTManager.get_token_from_header(authorization)
             user_id = JWTManager.get_user_id_from_token(token)
 
             # Add user_id to request state for route handlers

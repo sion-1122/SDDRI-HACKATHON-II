@@ -4,7 +4,7 @@
 // [From]: specs/001-user-auth/tasks.md (User Story 3)
 
 // This client provides a wrapper around fetch that automatically:
-// - Adds JWT tokens to requests
+// - Sends httpOnly cookies with JWT tokens
 // - Handles authentication errors
 // - Provides typed response handling
 
@@ -23,7 +23,6 @@
 // });
 // ```
 // */
-import { authClient } from "@/lib/auth-client";
 
 export interface ApiRequestConfig {
   url: string;
@@ -42,23 +41,13 @@ export const apiClient = async ({
     "Content-Type": "application/json",
   };
 
-  // Add JWT token if authentication is required
-  if (requiresAuth) {
-    try {
-      const { data: tokenData } = await authClient.token();
-      if (tokenData?.token) {
-        headers["Authorization"] = `Bearer ${tokenData.token}`;
-      }
-    } catch (error) {
-      console.error("Failed to get JWT token:", error);
-      throw new Error("Authentication failed");
-    }
-  }
-
+  // JWT token is stored in httpOnly cookie
+  // Browser sends it automatically, no need to add Authorization header
   const response = await fetch(`http://localhost:8000${url}`, {
     method,
     headers,
     ...(data && { body: JSON.stringify(data) }),
+    credentials: 'include', // Important: include cookies
   });
 
   if (!response.ok) {

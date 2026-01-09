@@ -11,8 +11,6 @@ This client provides methods for user authentication:
 */
 "use client";
 
-import { apiClient } from "@/lib/api/client";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface User {
