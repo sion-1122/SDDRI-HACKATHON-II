@@ -133,7 +133,7 @@ async def sign_up(
     return {
         "success": True,
         "message": "Account created successfully",
-        "user": UserRead.from_orm(user)
+        "user": UserRead.model_validate(user).model_dump()
     }
 
 
@@ -206,7 +206,7 @@ async def sign_in(
     response_data = {
         "success": True,
         "token": access_token,
-        "user": UserRead.from_orm(user),
+        "user": UserRead.model_validate(user).model_dump(),
         "expires_at": expires_at.isoformat() + "Z"
     }
 
@@ -299,7 +299,7 @@ async def get_session(
 
         return {
             "authenticated": True,
-            "user": UserRead.from_orm(user),
+            "user": UserRead.model_validate(user).model_dump(),
             "expires_at": expires_at
         }
 
