@@ -2,8 +2,11 @@
 
 **Feature Branch**: `001-user-auth`
 **Created**: 2026-01-08
+**Updated**: 2026-01-09
 **Status**: Draft
 **Input**: User description: "Implement BetterAuth on frontend and JWT verification middleware in FastAPI. Update API behavior to require authentication."
+
+**Architecture Clarification**: Next.js is frontend-only. All authentication logic (validation, JWT generation/verification, password hashing) is handled by FastAPI backend endpoints. Next.js only renders UI and sends requests to backend.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -88,31 +91,76 @@ An authenticated user wants to end their session securely. They click a logout b
 - How does the system handle a user who tries to log in with an account that was recently deleted?
 - What happens when the authentication service (frontend or backend) is temporarily unavailable?
 
+## Architecture Overview
+
+**Frontend (Next.js)**:
+- Renders login and registration forms
+- Collects user input (email, password)
+- Sends authentication requests to FastAPI backend
+- Stores JWT tokens returned by backend (in cookies or localStorage)
+- Includes JWT tokens in Authorization header for API requests
+- Redirects users based on authentication status
+- **Does NOT**: Generate JWTs, validate credentials, hash passwords, or perform any authentication logic
+
+**Backend (FastAPI)**:
+- Receives authentication requests from frontend
+- Validates email format and password strength
+- Checks if email already exists in database
+- Hashes passwords using secure algorithm (bcrypt/argon2)
+- Generates and signs JWT tokens
+- Verifies JWT signatures on API requests
+- Extracts user_id from validated JWTs
+- Returns HTTP 401 for invalid/expired/missing tokens
+- Manages user database (PostgreSQL with SQLModel)
+- **Handles ALL authentication logic**
+
+**Data Flow**:
+1. User fills login form → Next.js collects email/password
+2. Next.js sends POST to `/api/auth/sign-in` → FastAPI validates credentials
+3. FastAPI checks database → If valid, generates and signs JWT
+4. FastAPI returns JWT token → Next.js stores token
+5. Next.js includes JWT in Authorization header → FastAPI verifies on each request
+6. FastAPI extracts user_id → Scopes all data queries to authenticated user
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST allow users to register with an email address and password
-- **FR-002**: System MUST validate email format during registration (must contain @ symbol and valid domain structure)
-- **FR-003**: System MUST enforce minimum password length of 8 characters
-- **FR-004**: System MUST prevent duplicate account creation with the same email address (case-insensitive comparison)
-- **FR-005**: System MUST allow users to log in with registered email and password
-- **FR-006**: System MUST issue a JWT token upon successful login
-- **FR-007**: System MUST require JWT token for all API endpoints except login and registration
-- **FR-008**: System MUST validate JWT signature on every API request
-- **FR-009**: System MUST extract user ID from validated JWT tokens
-- **FR-010**: System MUST return HTTP 401 Unauthorized for requests with invalid, expired, or missing JWT tokens
-- **FR-011**: System MUST allow users to log out and clear their JWT token
-- **FR-012**: System MUST redirect unauthenticated users to login page when accessing protected pages
-- **FR-013**: System MUST redirect authenticated users to main application page when accessing login/register pages
-- **FR-014**: System MUST store user passwords in a hashed, irreversible format (never plaintext)
-- **FR-015**: System MUST provide clear error messages for authentication failures without revealing whether an email exists in the system
+**Frontend (Next.js) Requirements**:
+
+- **FR-001**: Frontend MUST render registration form that accepts email and password
+- **FR-002**: Frontend MUST render login form that accepts email and password
+- **FR-003**: Frontend MUST send registration data to FastAPI backend endpoint `/api/auth/sign-up`
+- **FR-004**: Frontend MUST send login credentials to FastAPI backend endpoint `/api/auth/sign-in`
+- **FR-005**: Frontend MUST store JWT token returned by backend (in cookies or localStorage)
+- **FR-006**: Frontend MUST include JWT token in Authorization header (`Bearer <token>`) for all API requests
+- **FR-007**: Frontend MUST clear JWT token on logout
+- **FR-008**: Frontend MUST redirect unauthenticated users to login page when accessing protected routes
+- **FR-009**: Frontend MUST redirect authenticated users away from login/register pages
+- **FR-010**: Frontend MUST display error messages returned by backend authentication API
+
+**Backend (FastAPI) Requirements**:
+
+- **FR-011**: Backend MUST provide `/api/auth/sign-up` endpoint that accepts email and password
+- **FR-012**: Backend MUST provide `/api/auth/sign-in` endpoint that accepts email and password
+- **FR-013**: Backend MUST validate email format (must contain @ symbol and valid domain structure)
+- **FR-014**: Backend MUST enforce minimum password length of 8 characters
+- **FR-015**: Backend MUST check if email already exists in database (case-insensitive) before registration
+- **FR-016**: Backend MUST hash passwords using secure irreversible algorithm (bcrypt or argon2) before storage
+- **FR-017**: Backend MUST store user accounts in PostgreSQL database with unique email constraint
+- **FR-018**: Backend MUST generate and sign JWT token upon successful login
+- **FR-019**: Backend MUST verify JWT signature on every API request (except auth endpoints)
+- **FR-020**: Backend MUST extract user_id from validated JWT token
+- **FR-021**: Backend MUST return HTTP 401 Unauthorized for requests with invalid, expired, or missing JWT tokens
+- **FR-022**: Backend MUST provide `/api/auth/sign-out` endpoint to invalidate sessions
+- **FR-023**: Backend MUST provide `/api/auth/session` endpoint to verify current session
+- **FR-024**: Backend MUST return clear error messages for authentication failures without revealing whether email exists
 
 ### Key Entities
 
-- **User Account**: Represents a registered user with email, hashed password, unique ID, creation timestamp, and last login timestamp. This entity is the foundation for data ownership and isolation.
-- **Authentication Token (JWT)**: Represents a signed token issued by the frontend containing user ID, issuance timestamp, and expiration timestamp. This token is sent with API requests to prove identity.
-- **Session**: Represents the period between login and logout for a specific user on a specific device. Sessions are tracked via JWT tokens stored in the client.
+- **User Account**: Represents a registered user with email, hashed password, unique ID, creation timestamp, and last login timestamp. This entity is the foundation for data ownership and isolation. **Stored and managed by FastAPI backend.**
+- **Authentication Token (JWT)**: Represents a signed token issued by the **FastAPI backend** containing user ID, issuance timestamp, and expiration timestamp. This token is sent with API requests to prove identity. **JWT generation and signing happens on FastAPI backend only.**
+- **Session**: Represents the period between login and logout for a specific user on a specific device. Sessions are tracked via JWT tokens stored by the **frontend client** (in cookies or localStorage), but **validated and verified by FastAPI backend** on every request.
 - **Credentials**: Represents the email and password combination used for authentication. Passwords are never stored in plaintext.
 
 ## Success Criteria *(mandatory)*
@@ -136,11 +184,11 @@ An authenticated user wants to end their session securely. They click a logout b
 2. **Password complexity**: We assume a minimum 8-character password is sufficient for this phase. Additional complexity requirements (special characters, numbers, etc.) are not enforced.
 3. **Token expiration**: We assume a standard JWT expiration time (e.g., 7 days) is appropriate. Token refresh mechanisms are not included in this feature.
 4. **Single session type**: We assume a standard JWT-based session is sufficient. Advanced session management (concurrent session limits, device management) is not included.
-5. **Frontend token storage**: We assume the frontend will store JWT tokens in httpOnly cookies or secure localStorage. This feature does not specify the exact storage mechanism.
+5. **Frontend token storage**: We assume the **Next.js frontend** will store JWT tokens returned by FastAPI backend in httpOnly cookies or secure localStorage. This feature does not specify the exact storage mechanism.
 6. **No social login**: We assume email/password authentication is sufficient. OAuth or social login providers are not included in this feature.
 7. **No account recovery**: We assume users can always reset their password if needed. Password reset functionality is not included in this feature.
-8. **User database**: We assume a relational database table exists for storing user accounts. The exact schema is defined during implementation planning.
-9. **Shared secret**: We assume the frontend and backend can securely share a `BETTER_AUTH_SECRET` environment variable for JWT signing and verification.
+8. **User database**: We assume a **FastAPI backend with relational database** (Neon PostgreSQL) table exists for storing user accounts. The exact schema is defined during implementation planning.
+9. **JWT signing secret**: We assume the **FastAPI backend** manages the JWT secret and signing process. The frontend does not participate in JWT generation or signing.
 10. **No rate limiting**: We assume basic authentication without rate limiting is sufficient for initial launch. Rate limiting may be added in a future feature for security.
 11. **No two-factor authentication**: We assume password-only authentication is sufficient for this phase. 2FA may be added in a future feature.
 12. **Basic error handling**: We assume standard error messages (invalid credentials, email already exists) are sufficient. Detailed error codes or localization are not included.
