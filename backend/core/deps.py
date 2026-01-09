@@ -8,16 +8,15 @@ from sqlmodel import Session
 from fastapi import Depends, HTTPException, status
 from starlette.requests import Request as StarletteRequest
 
-from core import config
+from core.database import get_session as db_get_session
 
 
 def get_session():
     """Yield a database session with automatic cleanup.
 
-    Looks up the engine dynamically to support testing with different databases.
+    Uses the get_session function from core.database for consistency.
     """
-    with Session(config.engine) as session:
-        yield session
+    yield from db_get_session()
 
 
 # Type alias for dependency injection
