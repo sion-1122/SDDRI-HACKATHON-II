@@ -4,19 +4,16 @@
 [From]: specs/001-user-auth/plan.md, specs/001-user-auth/research.md
 """
 import hashlib
+import bcrypt
 from datetime import datetime, timedelta
 from typing import Optional
 
-from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import HTTPException, status
 
 from core.config import get_settings
 
 settings = get_settings()
-
-# Password hashing context with bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _pre_hash_password(password: str) -> bytes:
@@ -44,9 +41,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         True if password matches hash, False otherwise
     """
-    # Pre-hash the plain password to match how it was stored
-    pre_hashed = _pre_hash_password(plain_password)
-    return pwd_context.verify(pre_hashed, hashed_password)
+    try:
+        # Pre-hash the plain password to match how it was stored
+        pre_hashed = _pre_hash_password(plain_password)
+        # Convert the stored hash to bytes
+        hashed_bytes = hashed_password.encode('utf-8')
+        # Verify using bcrypt directly
+        return bcrypt.checkpw(pre_hashed, hashed_bytes)
+    except Exception:
+        return False
 
 
 def get_password_hash(password: str) -> str:
@@ -71,8 +74,13 @@ def get_password_hash(password: str) -> str:
     # Pre-hash with SHA-256 to handle long passwords
     pre_hashed = _pre_hash_password(password)
 
-    # Hash the pre-hash with bcrypt
-    return pwd_context.hash(pre_hashed)
+    # Generate salt and hash with bcrypt
+    # Using 12 rounds (2^12 = 4096 iterations) for good security
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(pre_hashed, salt)
+
+    # Return as string
+    return hashed.decode('utf-8')
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
