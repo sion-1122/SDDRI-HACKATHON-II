@@ -1,10 +1,9 @@
-/* Dashboard page - main task management interface.
+/* Tasks page - displays list of tasks for authenticated user.
 
 [Task]: T034, T041, T048, T055, T057
 [From]: specs/003-frontend-task-manager/plan.md
 
 This client component:
-- Displays user info and logout button
 - Fetches tasks using taskApi.listTasks with filters and pagination
 - Renders TaskList component
 - Handles loading and error states
@@ -18,7 +17,6 @@ This client component:
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { useSession } from '@/lib/hooks';
 import { authClient } from '@/lib/auth-client';
 import { taskApi } from '@/lib/task-api';
 import { TaskList } from '@/components/tasks/TaskList';
@@ -27,30 +25,18 @@ import { Pagination } from '@/components/tasks/Pagination';
 import { TaskForm } from '@/components/tasks/TaskForm';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import type { Task } from '@/types/task';
 
 const ITEMS_PER_PAGE = 50;
 
-function DashboardContent() {
+export default function TasksPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await authClient.signOut();
-      window.location.href = '/login';
-    } catch (err) {
-      console.error('Logout failed:', err);
-      toast.error('Failed to logout');
-    }
-  };
 
   const loadTasks = async () => {
     setLoading(true);
@@ -88,7 +74,7 @@ function DashboardContent() {
         params.search = searchParam;
       }
 
-      // API returns full response with total count
+      // API now returns full response with total count
       const response = await taskApi.listTasks(params);
       setTasks(response.tasks);
       setTotal(response.total);
@@ -103,6 +89,27 @@ function DashboardContent() {
     }
   };
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: session, error } = await authClient.getSession();
+
+        if (error || !session) {
+          router.push('/login');
+          return;
+        }
+
+        // Authenticated - load tasks
+        loadTasks();
+      } catch (err) {
+        router.push('/login');
+      }
+    };
+
+    checkAuth();
+  }, [router]); // Run once on mount
+
+  // Reload tasks when URL params change (preserves filters across pages - T057)
   useEffect(() => {
     loadTasks();
   }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -122,23 +129,10 @@ function DashboardContent() {
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="mt-1 text-sm text-gray-600">
-                Welcome back, {user?.email}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={handleCreateTask}>
-                Create Task
-              </Button>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
-              >
-                Logout
-              </button>
-            </div>
+            <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
+            <Button onClick={handleCreateTask}>
+              Create Task
+            </Button>
           </div>
         </div>
       </div>
@@ -178,13 +172,5 @@ function DashboardContent() {
         />
       )}
     </div>
-  );
-}
-
-export default function DashboardPage() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
   );
 }

@@ -18,12 +18,23 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import Session, select
+from pydantic import BaseModel
+from sqlalchemy import func
 
 from core.deps import SessionDep, CurrentUserDep
 from models.task import Task, TaskCreate, TaskUpdate, TaskRead
 
 # Create API router (user_id removed - now from JWT)
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+
+
+# Response model for task list with pagination metadata
+class TaskListResponse(BaseModel):
+    """Response model for task list with pagination."""
+    tasks: list[TaskRead]
+    total: int
+    offset: int
+    limit: int
 
 
 @router.post("", response_model=TaskRead, status_code=201)
@@ -55,7 +66,7 @@ def create_task(
     return db_task
 
 
-@router.get("", response_model=list[TaskRead])
+@router.get("", response_model=TaskListResponse)
 def list_tasks(
     session: SessionDep,
     user_id: CurrentUserDep,  # Injected from JWT
@@ -73,8 +84,15 @@ def list_tasks(
         completed: Optional filter by completion status
 
     Returns:
-        List of tasks belonging to the authenticated user, filtered and paginated
+        TaskListResponse with tasks array and total count
     """
+    # Build the count query
+    count_statement = select(func.count(Task.id)).where(Task.user_id == user_id)
+    if completed is not None:
+        count_statement = count_statement.where(Task.completed == completed)
+    total = session.exec(count_statement).one()
+
+    # Build the query for tasks
     statement = select(Task).where(Task.user_id == user_id)
 
     # Apply completion status filter if provided
@@ -88,7 +106,13 @@ def list_tasks(
     statement = statement.order_by(Task.created_at.desc())
 
     tasks = session.exec(statement).all()
-    return tasks
+
+    return TaskListResponse(
+        tasks=[TaskRead.model_validate(task) for task in tasks],
+        total=total,
+        offset=offset,
+        limit=limit
+    )
 
 
 @router.get("/{task_id}", response_model=TaskRead)

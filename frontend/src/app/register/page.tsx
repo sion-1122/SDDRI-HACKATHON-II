@@ -1,13 +1,13 @@
-/* Registration page (server component).
+/* Register page (server component).
 
-[Task]: T022
+[Task]: T031
 [From]: specs/001-user-auth/plan.md
 */
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const metadata = {
   title: "Create Account - Todo List",
-  description: "Sign up for a new Todo List account",
+  description: "Create a new Todo List account",
 };
 
 export default function RegisterPage() {
@@ -24,7 +24,7 @@ export default function RegisterPage() {
               href="/login"
               className="font-medium text-blue-600 hover:text-blue-500"
             >
-              sign in to your existing account
+              sign in to existing account
             </a>
           </p>
         </div>

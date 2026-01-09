@@ -44,5 +44,6 @@ def init_db():
     """
     from sqlmodel import SQLModel
     import models.user  # Import models to register them with SQLModel
+    import models.task  # Import task model
 
     SQLModel.metadata.create_all(engine)
