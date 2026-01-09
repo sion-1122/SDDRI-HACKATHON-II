@@ -23,7 +23,8 @@ export function TaskList({ tasks }: TaskListProps) {
   const searchParams = useSearchParams();
   const hasActiveFilters = searchParams.has('status') || searchParams.has('search');
 
-  if (tasks.length === 0) {
+  // Handle undefined or null tasks
+  if (!tasks || tasks.length === 0) {
     if (hasActiveFilters) {
       // Empty state for filtered results (T051)
       return (
