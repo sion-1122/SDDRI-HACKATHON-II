@@ -25,7 +25,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
  * Task API Client Interface
  */
 export interface TaskApi {
-  listTasks(params?: TaskListParams): Promise<Task[]>;
+  listTasks(params?: TaskListParams): Promise<TaskListResponse>;
   createTask(data: TaskCreate): Promise<Task>;
   getTask(taskId: string): Promise<Task>;
   updateTask(taskId: string, data: TaskUpdate): Promise<Task>;
