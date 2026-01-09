@@ -90,7 +90,6 @@ function DashboardContent() {
 
       // API returns full response with total count
       const response = await taskApi.listTasks(params);
-      console.log({response})
       setTasks(response.tasks);
       setTotal(response.total);
     } catch (err: any) {

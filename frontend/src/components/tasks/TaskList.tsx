@@ -23,8 +23,6 @@ export function TaskList({ tasks }: TaskListProps) {
   const searchParams = useSearchParams();
   const hasActiveFilters = searchParams.has('status') || searchParams.has('search');
 
-  console.log(tasks)
-
   // Handle undefined or null tasks
   if (!tasks || tasks.length === 0) {
     if (hasActiveFilters) {
@@ -77,7 +75,7 @@ export function TaskList({ tasks }: TaskListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {tasks.map((task) => (
         <TaskItem key={task.id} task={task} />
       ))}
