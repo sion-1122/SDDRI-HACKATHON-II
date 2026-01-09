@@ -1,34 +1,15 @@
-/* Authentication utilities and session management.
+/* Client-side authentication hooks.
 
 [Task]: T040
 [From]: specs/001-user-auth/plan.md
+
+This file exports client-side React hooks for authentication.
 */
 "use client";
 
 import { useState, useEffect } from "react";
-import { apiClient } from "./api-client";
+import { authClient } from "@/lib/auth-client";
 import type { User, AuthState } from "@/types/auth";
-
-/**
- * Get current session on the server side.
- * For use in Server Components or Server Actions.
- *
- * NOTE: This won't work in Client Components during SSR.
- * Use useSession hook for client-side session management.
- */
-export async function getServerSession() {
-  try {
-    const session = await apiClient.getSession();
-    return session;
-  } catch (error) {
-    console.error("Failed to get server session:", error);
-    return {
-      authenticated: false,
-      user: null,
-      expires_at: null
-    };
-  }
-}
 
 /**
  * Hook to manage authentication state in Client Components.
@@ -60,13 +41,13 @@ export function useSession() {
 
     const checkSession = async () => {
       try {
-        const session = await apiClient.getSession();
+        const { data: session } = await authClient.getSession();
 
         if (mounted) {
           setState({
-            user: session.user,
+            user: session?.user || null,
             token: null, // Token is in httpOnly cookie, not accessible
-            isAuthenticated: session.authenticated,
+            isAuthenticated: !!session?.user,
             isLoading: false,
             error: null,
           });
