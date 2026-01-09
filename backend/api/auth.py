@@ -7,7 +7,7 @@ import re
 from typing import Optional
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Cookie
 from fastapi.responses import JSONResponse, Response
 from sqlmodel import Session, select
 
@@ -230,19 +230,23 @@ async def sign_in(
 
 @router.get("/session", response_model=dict, status_code=status.HTTP_200_OK)
 async def get_session(
+    response: Response,
     Authorization: Optional[str] = None,
+    auth_token: Optional[str] = Cookie(None),
     session: Session = Depends(get_session)
 ):
     """Verify JWT token and return user session data.
 
-    Checks JWT token from Authorization header or cookie,
+    Checks JWT token from Authorization header or httpOnly cookie,
     verifies signature, returns user data if authenticated.
 
     [Task]: T026
     [From]: specs/001-user-auth/contracts/openapi.yaml
 
     Args:
+        response: FastAPI response object
         Authorization: Bearer token from Authorization header
+        auth_token: JWT token from httpOnly cookie
         session: Database session
 
     Returns:
@@ -251,21 +255,21 @@ async def get_session(
     Raises:
         HTTPException 401: Invalid, expired, or missing token
     """
-    # Extract token from Authorization header
+    # Extract token from Authorization header or cookie
     token = None
+
+    # Try Authorization header first
     if Authorization:
         try:
-            scheme, token = Authorization.split()
-            if scheme.lower() != "bearer":
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication scheme"
-                )
+            scheme, header_token = Authorization.split()
+            if scheme.lower() == "bearer":
+                token = header_token
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authorization header format"
-            )
+            pass  # Fall through to cookie
+
+    # If no token in header, try cookie
+    if not token and auth_token:
+        token = auth_token
 
     if not token:
         raise HTTPException(
