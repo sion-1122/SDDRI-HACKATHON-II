@@ -39,7 +39,8 @@
       "Bash(pnpm add:*)",
       "Bash(git merge:*)",
       "Bash(git stash drop:*)",
-      "Bash(git remote get-url:*)"
+      "Bash(git remote get-url:*)",
+      "Bash(pnpm build:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
