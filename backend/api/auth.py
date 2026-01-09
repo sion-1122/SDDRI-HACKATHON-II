@@ -5,7 +5,7 @@
 """
 import re
 from typing import Optional
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse, Response
@@ -200,7 +200,6 @@ async def sign_in(
     )
 
     # Calculate expiration time
-    from datetime import datetime, timedelta
     expires_at = datetime.utcnow() + timedelta(days=settings.jwt_expiration_days)
 
     # Create response
@@ -296,7 +295,6 @@ async def get_session(
         exp = payload.get("exp")
         expires_at = None
         if exp:
-            from datetime import datetime
             expires_at = datetime.fromtimestamp(exp).isoformat() + "Z"
 
         return {
