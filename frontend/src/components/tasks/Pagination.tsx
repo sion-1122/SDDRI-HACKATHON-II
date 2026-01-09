@@ -26,8 +26,9 @@ export function Pagination({ total, limit, currentPage }: PaginationProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Calculate total pages
-  const totalPages = Math.ceil(total / limit);
+  // Validate total and calculate total pages
+  const validTotal = Number.isFinite(total) && total >= 0 ? total : 0;
+  const totalPages = validTotal > 0 ? Math.ceil(validTotal / limit) : 1;
 
   // Determine if navigation buttons should be disabled (T056)
   const hasPrevPage = currentPage > 1;
