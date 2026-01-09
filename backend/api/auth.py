@@ -130,10 +130,11 @@ async def sign_up(
         )
 
     # Return user data (excluding password)
+    user_dict = UserRead.model_validate(user).model_dump(mode='json')
     return {
         "success": True,
         "message": "Account created successfully",
-        "user": UserRead.model_validate(user).model_dump()
+        "user": user_dict
     }
 
 
@@ -206,7 +207,7 @@ async def sign_in(
     response_data = {
         "success": True,
         "token": access_token,
-        "user": UserRead.model_validate(user).model_dump(),
+        "user": UserRead.model_validate(user).model_dump(mode='json'),
         "expires_at": expires_at.isoformat() + "Z"
     }
 
@@ -299,7 +300,7 @@ async def get_session(
 
         return {
             "authenticated": True,
-            "user": UserRead.model_validate(user).model_dump(),
+            "user": UserRead.model_validate(user).model_dump(mode='json'),
             "expires_at": expires_at
         }
 
