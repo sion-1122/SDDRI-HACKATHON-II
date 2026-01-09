@@ -71,7 +71,7 @@ async function fetchWithTimeout(
   }
 }
 
-export const apiClient = async ({
+export const apiClientFn = async ({
   url,
   method = "GET",
   data,
@@ -118,7 +118,7 @@ export const apiClient = async ({
         await delay(backoffDelay);
 
         // Retry the request
-        return apiClient({
+        return apiClientFn({
           url,
           method,
           data,
@@ -144,7 +144,7 @@ export const apiClient = async ({
 
         await delay(backoffDelay);
 
-        return apiClient({
+        return apiClientFn({
           url,
           method,
           data,
@@ -160,33 +160,33 @@ export const apiClient = async ({
 
 // Task service with typed methods
 export const taskService = {
-  getTasks: () => apiClient({ url: "/api/tasks" }),
+  getTasks: () => apiClientFn({ url: "/api/tasks" }),
 
   getTask: (id: string) =>
-    apiClient({ url: `/api/tasks/${id}` }),
+    apiClientFn({ url: `/api/tasks/${id}` }),
 
   createTask: (task: { title: string; description?: string }) =>
-    apiClient({
+    apiClientFn({
       url: "/api/tasks",
       method: "POST",
       data: task,
     }),
 
   updateTask: (id: string, updates: any) =>
-    apiClient({
+    apiClientFn({
       url: `/api/tasks/${id}`,
       method: "PUT",
       data: updates,
     }),
 
   deleteTask: (id: string) =>
-    apiClient({
+    apiClientFn({
       url: `/api/tasks/${id}`,
       method: "DELETE",
     }),
 
   toggleComplete: (id: string) =>
-    apiClient({
+    apiClientFn({
       url: `/api/tasks/${id}/complete`,
       method: "PATCH",
     }),
