@@ -4,7 +4,7 @@
 [From]: specs/001-user-auth/plan.md
 """
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -25,17 +25,13 @@ class Settings(BaseSettings):
     # Environment
     environment: str = "development"
 
-    class Config:
-        """Pydantic configuration."""
-        env_file = ".env"
-        case_sensitive = False
-        # Map environment variable names to field names
-        fields = {
-            "database_url": {"env": "DATABASE_URL"},
-            "jwt_secret": {"env": "JWT_SECRET"},
-            "frontend_url": {"env": "FRONTEND_URL"},
-            "environment": {"env": "ENVIRONMENT"},
-        }
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        # Support legacy Better Auth environment variables
+        env_prefix="",
+        extra="ignore"
+    )
 
 
 @lru_cache()
