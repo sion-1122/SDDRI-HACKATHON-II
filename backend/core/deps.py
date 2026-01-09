@@ -3,12 +3,17 @@
 [Task]: T013, T014
 [From]: specs/001-user-auth/quickstart.md
 """
-from typing import Annotated
+from typing import Annotated, Optional
 from sqlmodel import Session
 from fastapi import Depends, HTTPException, status
 from starlette.requests import Request as StarletteRequest
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from core.database import get_session as db_get_session
+from core.security import decode_access_token
+
+# HTTP Bearer scheme for Authorization header
+security = HTTPBearer(auto_error=False)
 
 
 def get_session():
@@ -23,28 +28,64 @@ def get_session():
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-async def get_current_user_id(request: StarletteRequest) -> str:
+async def get_current_user_id(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    request: StarletteRequest = None
+) -> str:
     """Get current user ID from JWT token.
 
-    Extracts user_id from request.state that was populated by JWTMiddleware.
-    This function is used as a FastAPI dependency for protected routes.
+    Extracts JWT token from Authorization header or httpOnly cookie,
+    verifies it, and returns user_id.
 
     Args:
-        request: Starlette request object with state populated by middleware
+        credentials: HTTP Bearer credentials from Authorization header
+        request: Starlette request object to access cookies
 
     Returns:
         Current authenticated user's ID
 
     Raises:
-        HTTPException: If user_id not found in request state (not authenticated)
+        HTTPException: If token is invalid, expired, or missing
     """
-    if not hasattr(request.state, 'user_id'):
+    # Extract token from Authorization header or cookie
+    token = None
+
+    # Try Authorization header first
+    if credentials:
+        token = credentials.credentials
+
+    # If no token in header, try httpOnly cookie
+    if not token and request:
+        auth_token = request.cookies.get("auth_token")
+        if auth_token:
+            token = auth_token
+
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return request.state.user_id
+
+    try:
+        # Decode and verify token
+        payload = decode_access_token(token)
+        user_id = payload.get("sub")
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: user_id missing"
+            )
+
+        return user_id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials"
+        )
 
 
 # Type alias for JWT authentication dependency
