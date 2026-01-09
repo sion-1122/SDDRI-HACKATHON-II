@@ -4,7 +4,6 @@
 [From]: specs/001-user-auth/quickstart.md
 */
 import { betterAuth } from "better-auth";
-import { nextjs } from "better-auth/next-js";
 import { jwt } from "better-auth/plugins/jwt";
 
 export const auth = betterAuth({

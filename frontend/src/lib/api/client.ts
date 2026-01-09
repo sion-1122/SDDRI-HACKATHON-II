@@ -1,28 +1,28 @@
-"""API client for making authenticated requests to backend.
+// """API client for making authenticated requests to backend.
 
-[Task]: T064
-[From]: specs/001-user-auth/tasks.md (User Story 3)
+// [Task]: T064
+// [From]: specs/001-user-auth/tasks.md (User Story 3)
 
-This client provides a wrapper around fetch that automatically:
-- Adds JWT tokens to requests
-- Handles authentication errors
-- Provides typed response handling
+// This client provides a wrapper around fetch that automatically:
+// - Adds JWT tokens to requests
+// - Handles authentication errors
+// - Provides typed response handling
 
-Usage:
-```typescript
-import { apiClient } from '@/lib/api/client';
+// Usage:
+// ```typescript
+// import { apiClient } from '@/lib/api/client';
 
-// Get tasks for authenticated user
-const tasks = await apiClient({ url: '/api/tasks' });
+// // Get tasks for authenticated user
+// const tasks = await apiClient({ url: '/api/tasks' });
 
-// Create a new task
-const newTask = await apiClient({
-  url: '/api/tasks',
-  method: 'POST',
-  data: { title: 'My Task', description: 'Task description' }
-});
-```
-*/
+// // Create a new task
+// const newTask = await apiClient({
+//   url: '/api/tasks',
+//   method: 'POST',
+//   data: { title: 'My Task', description: 'Task description' }
+// });
+// ```
+// */
 import { authClient } from "@/lib/auth-client";
 
 export interface ApiRequestConfig {

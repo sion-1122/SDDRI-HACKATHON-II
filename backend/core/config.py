@@ -1,25 +1,51 @@
-"""Database configuration and engine setup."""
+"""Application configuration and settings.
+
+[Task]: T009
+[From]: specs/001-user-auth/plan.md
+"""
 import os
-from sqlmodel import SQLModel, create_engine
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise ValueError("DATABASE_URL environment variable not set")
-
-# Create database engine
-engine = create_engine(DATABASE_URL, echo=True)
+from pydantic_settings import BaseSettings
+from functools import lru_cache
 
 
-def init_db():
-    """Initialize database tables.
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables."""
 
-    Uses the current engine from config module to support testing.
+    # Database
+    database_url: str
+
+    # JWT
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    jwt_expiration_days: int = 7
+
+    # CORS
+    frontend_url: str
+
+    # Environment
+    environment: str = "development"
+
+    class Config:
+        """Pydantic configuration."""
+        env_file = ".env"
+        case_sensitive = False
+        # Map environment variable names to field names
+        fields = {
+            "database_url": {"env": "DATABASE_URL"},
+            "jwt_secret": {"env": "JWT_SECRET"},
+            "frontend_url": {"env": "FRONTEND_URL"},
+            "environment": {"env": "ENVIRONMENT"},
+        }
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """Get cached settings instance.
+
+    Returns:
+        Settings: Application settings
+
+    Raises:
+        ValueError: If required environment variables are not set
     """
-    from models.user import User
-    from models.task import Task
-
-    SQLModel.metadata.create_all(engine)
+    return Settings()
