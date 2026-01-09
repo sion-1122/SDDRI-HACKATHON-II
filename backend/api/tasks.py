@@ -19,6 +19,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import Session, select
 from pydantic import BaseModel
+from sqlalchemy import func
 
 from core.deps import SessionDep, CurrentUserDep
 from models.task import Task, TaskCreate, TaskUpdate, TaskRead
@@ -85,11 +86,11 @@ def list_tasks(
     Returns:
         TaskListResponse with tasks array and total count
     """
-    # First, get total count
-    count_statement = select(Task).where(Task.user_id == user_id)
+    # Build the count query
+    count_statement = select(func.count(Task.id)).where(Task.user_id == user_id)
     if completed is not None:
         count_statement = count_statement.where(Task.completed == completed)
-    total = session.exec(count_statement.count()).one()
+    total = session.exec(count_statement).one()
 
     # Build the query for tasks
     statement = select(Task).where(Task.user_id == user_id)
