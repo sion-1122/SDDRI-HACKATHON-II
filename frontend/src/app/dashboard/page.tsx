@@ -1,65 +1,182 @@
-/* Dashboard page (protected page example).
+/* Dashboard page - main task management interface.
 
-[Task]: T035, T042
-[From]: specs/001-user-auth/plan.md
+[Task]: T034, T041, T048, T055, T057
+[From]: specs/003-frontend-task-manager/plan.md
+
+This client component:
+- Displays user info and logout button
+- Fetches tasks using taskApi.listTasks with filters and pagination
+- Renders TaskList component
+- Handles loading and error states
+- Manages TaskForm modal for creating tasks
+- Implements filter logic from URL params
+- Integrates pagination with offset calculation (T055)
+- Preserves filters across pages (T057)
 */
-"use client";
+'use client';
 
-import { useSession } from "@/lib/auth";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { useSession } from '@/lib/hooks';
+import { authClient } from '@/lib/auth-client';
+import { taskApi } from '@/lib/task-api';
+import { TaskList } from '@/components/tasks/TaskList';
+import { FilterBar } from '@/components/tasks/FilterBar';
+import { Pagination } from '@/components/tasks/Pagination';
+import { TaskForm } from '@/components/tasks/TaskForm';
+import { Button } from '@/components/ui/Button';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import type { Task } from '@/types/task';
+
+const ITEMS_PER_PAGE = 50;
 
 function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useSession();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleLogout = async () => {
     try {
-      const { apiClient } = await import("@/lib/api-client");
-      await apiClient.signOut();
-      window.location.href = "/login";
+      await authClient.signOut();
+      window.location.href = '/login';
     } catch (err) {
-      console.error("Logout failed:", err);
+      console.error('Logout failed:', err);
+      toast.error('Failed to logout');
     }
   };
 
+  const loadTasks = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Read status, search, and page from URL params (T048, T055, T057)
+      const statusParam = searchParams.get('status');
+      const searchParam = searchParams.get('search');
+      const pageParam = searchParams.get('page');
+
+      // Convert page to offset: offset = (page - 1) * limit (T055)
+      const page = pageParam ? parseInt(pageParam, 10) : 1;
+      const offset = (page - 1) * ITEMS_PER_PAGE;
+
+      const params: {
+        limit: number;
+        offset: number;
+        completed?: boolean;
+        search?: string;
+      } = {
+        limit: ITEMS_PER_PAGE,
+        offset,
+      };
+
+      // Convert status filter to completed boolean
+      if (statusParam === 'active') {
+        params.completed = false;
+      } else if (statusParam === 'completed') {
+        params.completed = true;
+      }
+
+      // Add search query if present
+      if (searchParam) {
+        params.search = searchParam;
+      }
+
+      // API returns full response with total count
+      const response = await taskApi.listTasks(params);
+      setTasks(response.tasks);
+      setTotal(response.total);
+    } catch (err: any) {
+      if (err.message === 'Session expired') {
+        router.push('/login');
+        return;
+      }
+      setError(err.message || 'Failed to load tasks');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTasks();
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleCreateTask = () => {
+    setShowCreateModal(true);
+  };
+
+  // Get current page from URL params
+  const currentPage = searchParams.get('page')
+    ? parseInt(searchParams.get('page')!, 10)
+    : 1;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="border-4 border-dashed border-gray-200 rounded-lg p-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  Welcome back!
-                </h1>
-                <p className="mt-1 text-sm text-gray-600">
-                  Signed in as: {user?.email}
-                </p>
-              </div>
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Welcome back, {user?.email}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={handleCreateTask}>
+                Create Task
+              </Button>
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors font-medium"
               >
                 Logout
               </button>
             </div>
-
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Your Todo List
-              </h2>
-              <p className="text-gray-600">
-                This is a protected page. You can only see this if you're authenticated.
-              </p>
-              <p className="mt-4 text-sm text-gray-500">
-                User ID: {user?.id}
-              </p>
-              <p className="mt-2 text-sm text-gray-500">
-                Account created: {user?.created_at ? new Date(user.created_at).toLocaleString() : "N/A"}
-              </p>
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Main content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Filter and search bar */}
+        <FilterBar />
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : error ? (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        ) : (
+          <>
+            <TaskList tasks={tasks} />
+            {/* Pagination component (T055, T057) */}
+            <Pagination
+              total={total}
+              limit={ITEMS_PER_PAGE}
+              currentPage={currentPage}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Create Task Modal */}
+      {showCreateModal && (
+        <TaskForm
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          mode="create"
+        />
+      )}
     </div>
   );
 }
