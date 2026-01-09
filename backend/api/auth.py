@@ -15,6 +15,7 @@ from models.user import User, UserCreate, UserRead, UserLogin
 from core.database import get_session
 from core.security import get_password_hash, verify_password, create_access_token, decode_access_token
 from core.config import get_settings
+from api.deps import get_current_user
 
 settings = get_settings()
 
@@ -315,3 +316,69 @@ async def get_session(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
+
+
+@router.get("/users/me")
+async def get_users_me(
+    current_user: User = Depends(get_current_user)
+):
+    """Get current authenticated user information.
+
+    Example protected endpoint that requires JWT authentication.
+    Returns user data for authenticated user.
+
+    [Task]: T038
+    [From]: specs/001-user-auth/plan.md
+
+    Args:
+        current_user: Authenticated user from dependency
+
+    Returns:
+        User data for current user
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    return UserRead.model_validate(current_user).model_dump(mode='json')
+
+
+@router.post("/sign-out", status_code=status.HTTP_200_OK)
+async def sign_out(
+    response: Response,
+    current_user: User = Depends(get_current_user)
+):
+    """Logout current user.
+
+    Client-side logout (clears httpOnly cookie).
+    Server-side token is stateless (JWT), so no server storage to clear.
+
+    [Task]: T043
+    [From]: specs/001-user-auth/contracts/openapi.yaml
+
+    Args:
+        response: FastAPI response object
+        current_user: Authenticated user (for validation only)
+
+    Returns:
+        Success message
+
+    Raises:
+        HTTPException 401: If not authenticated
+    """
+    # Create response with success message
+    response_data = {
+        "success": True,
+        "message": "Logged out successfully"
+    }
+
+    # Create response with cleared httpOnly cookie
+    response_obj = JSONResponse(content=response_data)
+
+    # Clear the httpOnly cookie by setting it to expire
+    response_obj.delete_cookie(
+        key="auth_token",
+        path="/",
+        samesite="lax"
+    )
+
+    return response_obj

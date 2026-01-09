@@ -122,19 +122,19 @@ This document breaks down the implementation of the authentication system into a
 
 ### Backend Implementation
 
-- [ ] T026 [US2] Implement GET /api/auth/session endpoint in backend/api/auth.py (verify JWT, return user data or 401)
-- [ ] T027 [US2] Implement POST /api/auth/sign-in endpoint in backend/api/auth.py (verify credentials, generate JWT, set httpOnly cookie, return token and user)
-- [ ] T028 [US2] Implement verify_password function in backend/core/security.py (bcrypt verify)
-- [ ] T029 [US2] Implement create_access_token function in backend/core/security.py (JWT with 7-day expiration)
-- [ ] T030 [US2] Implement get_user_by_email helper in backend/api/auth.py (query database)
+- [x] T026 [US2] Implement GET /api/auth/session endpoint in backend/api/auth.py (verify JWT, return user data or 401)
+- [x] T027 [US2] Implement POST /api/auth/sign-in endpoint in backend/api/auth.py (verify credentials, generate JWT, set httpOnly cookie, return token and user)
+- [x] T028 [US2] Implement verify_password function in backend/core/security.py (bcrypt verify)
+- [x] T029 [US2] Implement create_access_token function in backend/core/security.py (JWT with 7-day expiration)
+- [x] T030 [US2] Implement get_user_by_email helper in backend/api/auth.py (query database)
 
 ### Frontend Implementation
 
-- [ ] T031 [P] [US2] Create frontend/src/app/login/page.tsx (server component rendering LoginForm)
-- [ ] T032 [US2] Create frontend/src/components/auth/LoginForm.tsx (client component with email/password, validation, submit handler, error display)
-- [ ] T033 [US2] Implement form validation in LoginForm.tsx (client-side email format, password length)
-- [ ] T034 [US2] Integrate api-client in LoginForm.tsx (POST /api/auth/sign-in, handle 401 error, store token via cookie set by backend, redirect to /dashboard)
-- [ ] T035 [US2] Create frontend/src/app/dashboard/page.tsx (protected page example)
+- [x] T031 [P] [US2] Create frontend/src/app/login/page.tsx (server component rendering LoginForm)
+- [x] T032 [US2] Create frontend/src/components/auth/LoginForm.tsx (client component with email/password, validation, submit handler, error display)
+- [x] T033 [US2] Implement form validation in LoginForm.tsx (client-side email format, password length)
+- [x] T034 [US2] Integrate api-client in LoginForm.tsx (POST /api/auth/sign-in, handle 401 error, store token via cookie set by backend, redirect to /dashboard)
+- [x] T035 [US2] Create frontend/src/app/dashboard/page.tsx (protected page example)
 
 **Parallel Execution Example**:
 ```bash
@@ -153,16 +153,16 @@ This document breaks down the implementation of the authentication system into a
 
 ### Backend Implementation
 
-- [ ] T036 [P] [US3] Create backend/api/deps.py with get_current_user dependency (extract JWT from cookie or header, verify signature, return user or 401)
-- [ ] T037 [P] [US3] Implement JWT verification middleware in backend/api/deps.py (decode token, extract user_id, query database)
-- [ ] T038 [US3] Create example protected endpoint GET /api/users/me in backend/api/auth.py (requires get_current_user dependency)
-- [ ] T039 [US3] Add CORS middleware to backend/main.py (allow origins from FRONTEND_URL, allow credentials)
+- [x] T036 [P] [US3] Create backend/api/deps.py with get_current_user dependency (extract JWT from cookie or header, verify signature, return user or 401)
+- [x] T037 [P] [US3] Implement JWT verification middleware in backend/api/deps.py (decode token, extract user_id, query database)
+- [x] T038 [US3] Create example protected endpoint GET /api/users/me in backend/api/auth.py (requires get_current_user dependency)
+- [x] T039 [US3] Add CORS middleware to backend/main.py (allow origins from FRONTEND_URL, allow credentials)
 
 ### Frontend Implementation
 
-- [ ] T040 [P] [US3] Create frontend/src/lib/auth.ts with session check utilities (getServerSession, useSession hook)
-- [ ] T041 [US3] Implement ProtectedRoute wrapper component in frontend/src/components/auth/ProtectedRoute.tsx (check session, redirect to /login if not authenticated)
-- [ ] T042 [US3] Update frontend/src/app/dashboard/page.tsx to use ProtectedRoute wrapper
+- [x] T040 [P] [US3] Create frontend/src/lib/auth.ts with session check utilities (getServerSession, useSession hook)
+- [x] T041 [US3] Implement ProtectedRoute wrapper component in frontend/src/components/auth/ProtectedRoute.tsx (check session, redirect to /login if not authenticated)
+- [x] T042 [US3] Update frontend/src/app/dashboard/page.tsx to use ProtectedRoute wrapper
 
 **Parallel Execution Example**:
 ```bash
@@ -181,12 +181,12 @@ This document breaks down the implementation of the authentication system into a
 
 ### Backend Implementation
 
-- [ ] T043 [US4] Implement POST /api/auth/sign-out endpoint in backend/api/auth.py (return success message, client clears cookie)
+- [x] T043 [US4] Implement POST /api/auth/sign-out endpoint in backend/api/auth.py (return success message, clear httpOnly cookie)
 
 ### Frontend Implementation
 
-- [ ] T044 [US4] Implement logout function in frontend/src/lib/auth.ts (call POST /api/auth/sign-out, clear cookie, redirect to /login)
-- [ ] T045 [US4] Add logout button to frontend/src/app/dashboard/page.tsx (call logout function)
+- [x] T044 [US4] Implement logout function in frontend/src/lib/auth.ts (call POST /api/auth/sign-out, clear cookie, redirect to /login)
+- [x] T045 [US4] Add logout button to frontend/src/app/dashboard/page.tsx (call logout function)
 
 ---
 
@@ -196,14 +196,14 @@ This document breaks down the implementation of the authentication system into a
 
 ### Backend Polish
 
-- [ ] T046 [P] Add global exception handler to backend/main.py (catch 401, return consistent error format)
-- [ ] T047 [P] Create backend/main.py with FastAPI app, include all routers, CORS, exception handlers
-- [ ] T048 [P] Add health check endpoint GET /health in backend/main.py
+- [x] T046 [P] Add global exception handler to backend/main.py (catch 401, return consistent error format)
+- [x] T047 [P] Create backend/main.py with FastAPI app, include all routers, CORS, exception handlers
+- [x] T048 [P] Add health check endpoint GET /health in backend/main.py
 
 ### Frontend Polish
 
-- [ ] T049 [P] Update frontend/src/app/layout.tsx with basic HTML structure and metadata
-- [ ] T050 [P] Add error page frontend/src/app/error.tsx (handle errors gracefully)
+- [x] T049 [P] Update frontend/src/app/layout.tsx with basic HTML structure and metadata
+- [x] T050 [P] Add error page frontend/src/app/error.tsx (handle errors gracefully)
 
 **Parallel Execution Example**:
 ```bash
