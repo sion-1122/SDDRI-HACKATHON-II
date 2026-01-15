@@ -25,14 +25,14 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create frontend directory structure per plan.md (frontend/src/{app,components,lib,types})
-- [ ] T002 Initialize Next.js 16 project with TypeScript in frontend/package.json
+- [X] T001 Create frontend directory structure per plan.md (frontend/src/{app,components,lib,types})
+- [X] T002 Initialize Next.js 16 project with TypeScript in frontend/package.json
 - [X] T003 Install core dependencies (Next.js 16.1.1, React 19.2.3, Better Auth 1.4.10, Tailwind CSS 4, Zod, Sonner)
-- [ ] T004 [P] Configure TypeScript strict mode in frontend/tsconfig.json
-- [ ] T005 [P] Configure Tailwind CSS 4 in frontend/tailwind.config.ts
-- [ ] T006 [P] Configure Next.js App Router in frontend/next.config.ts
-- [ ] T007 Create environment configuration file frontend/.env.example with NEXT_PUBLIC_API_URL and BETTER_AUTH_SECRET
-- [ ] T008 [P] Create frontend/src/app/globals.css with Tailwind directives
+- [X] T004 [P] Configure TypeScript strict mode in frontend/tsconfig.json
+- [X] T005 [P] Configure Tailwind CSS 4 in frontend/tailwind.config.ts (uses PostCSS, no tailwind.config.ts needed for Tailwind 4)
+- [X] T006 [P] Configure Next.js App Router in frontend/next.config.ts
+- [X] T007 Create environment configuration file frontend/.env.example with NEXT_PUBLIC_API_URL and BETTER_AUTH_SECRET
+- [X] T008 [P] Create frontend/src/app/globals.css with Tailwind directives
 
 **Checkpoint**: Project structure ready, dependencies installed, configuration files in place
 
