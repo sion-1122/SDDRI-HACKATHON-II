@@ -15,7 +15,7 @@ import type {
   TaskListResponse,
 } from '@/types/api';
 
-import { apiClient } from '@/lib/api/client';
+import { apiClientFn } from '@/lib/api/client';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -52,8 +52,8 @@ export class TaskApiClient implements TaskApi {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    // Use the new apiClient which handles JWT tokens automatically
-    return apiClient({
+    // Use the new apiClientFn which handles JWT tokens automatically
+    return apiClientFn({
       url: endpoint,
       method: (options.method as any) || 'GET',
       data: options.body ? JSON.parse(options.body as string) : undefined,

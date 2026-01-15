@@ -40,7 +40,10 @@
       "Bash(git merge:*)",
       "Bash(git stash drop:*)",
       "Bash(git remote get-url:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(CI=true pnpm rebuild:*)",
+      "Bash(pnpm list:*)",
+      "Bash(cp:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
