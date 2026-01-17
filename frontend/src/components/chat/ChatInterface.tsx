@@ -1,16 +1,18 @@
 /** ChatInterface component for AI-powered task management.
 
-[Task]: T019, T032
+[Task]: T019, T032, T061, T062
 [From]: specs/004-ai-chatbot/tasks.md
 
 This component provides a conversational interface for task management
 with persistent conversation state across page refreshes.
+
+Refactored to use separate MessageList and MessageInput components.
 */
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ChatInterface as OpenAIChatInterface } from "@openai/chatkit-react";
-import type { Message } from "@openai/chatkit-react";
+import { useState, useEffect } from "react";
+import { MessageList, type ChatMessage } from "./MessageList";
+import { MessageInput } from "./MessageInput";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -19,11 +21,6 @@ const CONVERSATION_STORAGE_KEY = (userId: string) => `chat_conversation_${userId
 
 interface ChatInterfaceProps {
   userId: string;
-}
-
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
 }
 
 interface ChatResponse {
@@ -77,7 +74,6 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Persist conversation state to localStorage whenever it changes
   // [From]: T032 - Store conversation_id in frontend chat state
@@ -93,11 +89,6 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
       // Ignore storage errors (e.g., quota exceeded, private browsing)
     }
   }, [conversationId, messages, userId]);
-
-  // Scroll to bottom when new messages arrive
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   /**
    * Send a message to the AI chatbot.
@@ -225,93 +216,18 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
         )}
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="mx-4 mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded">
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      )}
+      {/* Message List Component */}
+      {/* [From]: T061 - Add MessageList React component */}
+      <MessageList messages={messages} isLoading={isLoading} error={error} />
 
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Start a conversation to manage your tasks
-              </p>
-              <div className="space-y-2 text-sm text-gray-400 dark:text-gray-500">
-                <p>Try: "Create a task to buy groceries"</p>
-                <p>Try: "Show me my tasks"</p>
-                <p>Try: "Mark the first task as complete"</p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                    message.role === "user"
-                      ? "bg-blue-500 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.currentTarget);
-          const input = formData.get("message") as string;
-          if (input) {
-            handleSendMessage(input);
-            e.currentTarget.reset();
-          }
-        }}
-        className="p-4 border-t dark:border-gray-700"
-      >
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            name="message"
-            placeholder="Type your message..."
-            disabled={isLoading}
-            maxLength={10000}
-            className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? "Sending..." : "Send"}
-          </button>
-        </div>
-      </form>
+      {/* Message Input Component */}
+      {/* [From]: T062 - Add MessageInput React component */}
+      <MessageInput
+        onSendMessage={handleSendMessage}
+        disabled={isLoading}
+        maxLength={10000}
+        placeholder="Type your message..."
+      />
     </div>
   );
 }

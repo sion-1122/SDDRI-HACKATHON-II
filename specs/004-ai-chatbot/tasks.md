@@ -111,12 +111,12 @@
 
 ### Implementation for User Story 6
 
-- [ ] T030 [P] [US6] Implement conversation loading by conversation_id in backend/services/chat_service.py
-- [ ] T031 [P] [US6] Add conversation creation flow when no conversation_id provided in backend/services/chat_service.py
-- [ ] T032 [US6] Store conversation_id in frontend chat state in frontend/components/chat/ChatInterface.tsx
+- [X] T030 [P] [US6] Implement conversation loading by conversation_id in backend/services/conversation.py
+- [X] T031 [P] [US6] Add conversation creation flow when no conversation_id provided in backend/services/conversation.py
+- [X] T032 [US6] Store conversation_id in frontend chat state in frontend/components/chat/ChatInterface.tsx
 - [ ] T033 [US6] Implement 90-day conversation auto-deletion job in backend/services/conversation_cleanup.py
 - [ ] T034 [US6] Add conversation.updated_at trigger on message creation in backend/models/message.py
-- [ ] T035 [US6] Handle auto-deleted conversations gracefully in backend/api/chat.py
+- [X] T035 [US6] Handle auto-deleted conversations gracefully in backend/api/chat.py
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 6 should all work independently
 
@@ -197,10 +197,10 @@
 
 ### Implementation for User Story 7
 
-- [ ] T052 [US7] Enable MCP tool chaining in backend/ai_agent/agent.py
-- [ ] T053 [US7] Handle tool execution errors in multi-action flows in backend/ai_agent/agent.py
-- [ ] T054 [US7] Aggregate multiple tool results into single response in backend/ai_agent/agent.py
-- [ ] T055 [US7] Request clarification for vague multi-action commands in backend/ai_agent/agent.py
+- [X] T052 [US7] Enable MCP tool chaining in backend/ai_agent/agent.py (natively supported by OpenAI SDK)
+- [X] T053 [US7] Handle tool execution errors in multi-action flows in backend/ai_agent/agent.py
+- [X] T054 [US7] Aggregate multiple tool results into single response in backend/ai_agent/agent.py
+- [X] T055 [US7] Request clarification for vague multi-action commands in backend/ai_agent/agent.py
 
 **Checkpoint**: All user stories should now be independently functional
 
@@ -211,13 +211,13 @@
 **Purpose**: Improvements that affect multiple user stories
 
 - [ ] T056 [P] Add request queue with exponential backoff for Gemini rate limits in backend/services/rate_limiter.py
-- [ ] T057 [P] Implement prompt injection sanitization in backend/services/security.py
-- [ ] T058 [P] Add audit logging for all MCP tool invocations in backend/mcp_server/server.py
-- [ ] T059 [P] Create database indexes for conversation/message queries in backend/migrations/
-- [ ] T060 [P] Add comprehensive error messages for edge cases in backend/api/chat.py
-- [ ] T061 Add MessageList React component in frontend/components/chat/MessageList.tsx
-- [ ] T062 Add MessageInput React component in frontend/components/chat/MessageInput.tsx
-- [ ] T063 Update quickstart.md with actual environment setup steps
+- [X] T057 [P] Implement prompt injection sanitization in backend/services/security.py
+- [X] T058 [P] Add audit logging for all MCP tool invocations in backend/services/audit.py
+- [X] T059 [P] Create database indexes for conversation/message queries in backend/migrations/
+- [X] T060 [P] Add comprehensive error messages for edge cases in backend/api/chat.py
+- [X] T061 Add MessageList React component in frontend/components/chat/MessageList.tsx
+- [X] T062 Add MessageInput React component in frontend/components/chat/MessageInput.tsx
+- [X] T063 Update quickstart.md with actual environment setup steps
 - [ ] T064 [P] Run backend test suite and ensure 70%+ coverage in backend/tests/
 - [ ] T065 [P] Run frontend component tests in frontend/tests/chat/
 - [ ] T066 Validate quickstart.md instructions by running through setup process
