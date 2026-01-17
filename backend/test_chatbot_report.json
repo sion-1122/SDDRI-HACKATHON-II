@@ -1,0 +1,185 @@
+{
+  "summary": {
+    "total": 11,
+    "passed": 0,
+    "failed": 11,
+    "pass_rate": "0.0%",
+    "duration_seconds": 19.554954
+  },
+  "by_category": {
+    "add_task": {
+      "passed": 0,
+      "failed": 2,
+      "total": 2
+    },
+    "list_tasks": {
+      "passed": 0,
+      "failed": 2,
+      "total": 2
+    },
+    "update_task": {
+      "passed": 0,
+      "failed": 1,
+      "total": 1
+    },
+    "complete_task": {
+      "passed": 0,
+      "failed": 2,
+      "total": 2
+    },
+    "delete_task": {
+      "passed": 0,
+      "failed": 1,
+      "total": 1
+    },
+    "delete_all_tasks": {
+      "passed": 0,
+      "failed": 1,
+      "total": 1
+    },
+    "edge_case": {
+      "passed": 0,
+      "failed": 1,
+      "total": 1
+    },
+    "ambiguous_reference": {
+      "passed": 0,
+      "failed": 1,
+      "total": 1
+    }
+  },
+  "results": [
+    {
+      "index": 1,
+      "category": "add_task",
+      "prompt": "Add a task to buy groceries",
+      "expected_tool": "add_task",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 2,
+      "category": "add_task",
+      "prompt": "Create a high priority task called 'Finish project report' due tomorrow",
+      "expected_tool": "add_task",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 3,
+      "category": "list_tasks",
+      "prompt": "What are my tasks?",
+      "expected_tool": "list_tasks",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 4,
+      "category": "list_tasks",
+      "prompt": "Show me my pending tasks",
+      "expected_tool": "list_tasks",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 5,
+      "category": "update_task",
+      "prompt": "Change my first task to high priority",
+      "expected_tool": "update_task",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": "Requires at least one existing task"
+    },
+    {
+      "index": 6,
+      "category": "complete_task",
+      "prompt": "Mark my first task as complete",
+      "expected_tool": "complete_task",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": "Requires at least one existing task"
+    },
+    {
+      "index": 7,
+      "category": "complete_task",
+      "prompt": "Mark all my tasks as complete",
+      "expected_tool": "complete_all_tasks",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 8,
+      "category": "delete_task",
+      "prompt": "Delete my last task",
+      "expected_tool": "delete_task",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": "Requires at least one existing task"
+    },
+    {
+      "index": 9,
+      "category": "delete_all_tasks",
+      "prompt": "Delete all my tasks",
+      "expected_tool": "delete_all_tasks",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": ""
+    },
+    {
+      "index": 10,
+      "category": "edge_case",
+      "prompt": "What are my tasks?",
+      "expected_tool": null,
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": "Empty list - should handle gracefully"
+    },
+    {
+      "index": 11,
+      "category": "ambiguous_reference",
+      "prompt": "Show me my tasks",
+      "expected_tool": "list_tasks",
+      "passed": false,
+      "failure_reason": "Request failed: HTTP 500: Internal Server Error",
+      "response": null,
+      "error": "HTTP 500: Internal Server Error",
+      "status_code": 500,
+      "note": "Priming for ambiguous reference"
+    }
+  ]
+}
