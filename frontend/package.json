@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@openai/chatkit-react": "^1.4.1",
     "better-auth": "^1.4.10",
     "next": "16.1.1",
     "react": "19.2.3",

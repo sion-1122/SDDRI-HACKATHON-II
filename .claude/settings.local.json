@@ -43,7 +43,13 @@
       "Bash(pnpm build:*)",
       "Bash(CI=true pnpm rebuild:*)",
       "Bash(pnpm list:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(if:*)",
+      "Bash(then find /mnt/d/class/todo-list-hackathon/specs/004-ai-chatbot/checklists -name \"*.md\" -type f)",
+      "Bash(else echo \"No checklists directory\")",
+      "Bash(fi:*)",
+      "Bash(uv remove:*)",
+      "Bash(PYTHONPATH=backend uv run pytest:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -16,7 +16,7 @@ from sqlmodel import Session, text
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.config import engine
+from core.database import engine
 
 
 def run_migration(migration_file: str):
@@ -54,6 +54,7 @@ def main():
     # Migration files in order
     migrations = [
         "001_add_user_id_index.sql",
+        "002_add_conversation_and_message_tables.sql",  # Phase III: AI Chatbot
     ]
 
     print("🚀 Starting database migrations...\n")

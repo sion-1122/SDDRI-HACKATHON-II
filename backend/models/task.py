@@ -24,6 +24,14 @@ class Task(SQLModel, table=True):
         default=None,
         max_length=2000
     )
+    due_date: Optional[datetime] = Field(
+        default=None,
+        index=True
+    )
+    priority: str = Field(
+        default="medium",
+        max_length=10
+    )
     completed: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=datetime.utcnow
@@ -40,6 +48,8 @@ class TaskCreate(SQLModel):
     """
     title: str = Field(min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
+    due_date: Optional[datetime] = None
+    priority: str = Field(default="medium", max_length=10)
     completed: bool = False
 
 
@@ -50,6 +60,8 @@ class TaskUpdate(SQLModel):
     """
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
+    due_date: Optional[datetime] = None
+    priority: Optional[str] = Field(default=None, max_length=10)
     completed: Optional[bool] = None
 
 
@@ -62,6 +74,8 @@ class TaskRead(SQLModel):
     user_id: uuid.UUID
     title: str
     description: Optional[str] | None
+    due_date: Optional[datetime] | None
+    priority: str
     completed: bool
     created_at: datetime
     updated_at: datetime

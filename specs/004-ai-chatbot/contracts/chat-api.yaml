@@ -1,0 +1,381 @@
+openapi: 3.0.3
+info:
+  title: Todo AI Chatbot API
+  description: |
+    Chat API for Phase III AI-powered task management system.
+
+    This API enables users to manage their todo lists using natural language through a conversational interface. The AI agent interprets user intent and executes task operations via MCP tools.
+
+    **Key Features**:
+    - Stateless conversation management
+    - Natural language task CRUD operations
+    - Persistent conversation history
+    - JWT-based authentication
+    - User data isolation
+
+  version: 1.0.0
+  contact:
+    name: Todo List Hackathon Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Chat
+    description: Conversational AI endpoints
+
+paths:
+  /api/{user_id}/chat:
+    post:
+      tags:
+        - Chat
+      summary: Send message to AI chatbot
+      description: |
+        Sends a user message to the AI chatbot and receives an assistant response.
+
+        **Authentication**: Requires valid JWT token in Authorization header.
+
+        **Statelessness**: The API is stateless. Conversation context is loaded from the database based on `conversation_id`.
+
+        **Flow**:
+        1. Authenticate JWT and extract user_id
+        2. Verify user_id matches URL parameter
+        3. Load conversation history (if conversation_id provided)
+        4. Create new conversation if none provided
+        5. Persist user message
+        6. Invoke AI agent with full history
+        7. Persist AI response
+        8. Return response with message details
+
+      operationId: sendMessage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: |
+            User ID from JWT token. Must match authenticated user.
+
+            **Security**: The API verifies this matches the user_id extracted from the JWT token.
+          example: 123
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              create_task:
+                summary: Create a new task
+                value:
+                  message: "Add a task to buy groceries"
+                  conversation_id: null
+              list_tasks:
+                summary: List all tasks
+                value:
+                  message: "What are my pending tasks?"
+                  conversation_id: "abc-123-def"
+              continue_conversation:
+                summary: Continue existing conversation
+                value:
+                  message: "Mark task 1 as complete"
+                  conversation_id: "abc-123-def"
+
+      responses:
+        '200':
+          description: Successful message processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                task_created:
+                  summary: Task created successfully
+                  value:
+                    message_id: "msg-456-xyz"
+                    conversation_id: "conv-abc-123"
+                    role: "assistant"
+                    content: "I've added the task 'buy groceries' to your list. Is there anything else you'd like to add?"
+                    created_at: "2025-01-15T10:30:45Z"
+                tasks_listed:
+                  summary: Tasks listed
+                  value:
+                    message_id: "msg-789-xyz"
+                    conversation_id: "conv-abc-123"
+                    role: "assistant"
+                    content: "You have 3 pending tasks:\n1. Buy groceries\n2. Finish the report\n3. Call mom tonight"
+                    created_at: "2025-01-15T10:31:15Z"
+
+        '400':
+          description: Bad Request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                empty_message:
+                  summary: Empty message
+                  value:
+                    error: "validation_error"
+                    message: "Message content cannot be empty"
+                    details:
+                      - field: "message"
+                        issue: "required field missing or empty"
+
+        '401':
+          description: Unauthorized - Invalid or missing JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "unauthorized"
+                message: "Invalid or missing JWT token"
+                details: null
+
+        '403':
+          description: Forbidden - user_id does not match authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "forbidden"
+                message: "user_id does not match authenticated user"
+                details: null
+
+        '404':
+          description: Not Found - Conversation not found or doesn't belong to user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "not_found"
+                message: "Conversation not found"
+                details: null
+
+        '429':
+          description: Too Many Requests - Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "rate_limit_exceeded"
+                message: "Too many messages. Please wait before trying again."
+                details:
+                  retry_after: 30
+
+        '500':
+          description: Internal Server Error - AI service or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "internal_error"
+                message: "AI service temporarily unavailable. Please try again."
+                details: null
+
+        '503':
+          description: Service Unavailable - AI service down
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "service_unavailable"
+                message: "AI service is currently unavailable. Please try again later."
+                details: null
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token issued by Better Auth during user login.
+
+        **Header Format**: `Authorization: Bearer <token>`
+
+        **Token Payload**:
+        ```json
+        {
+          "user_id": 123,
+          "email": "user@example.com",
+          "exp": 1705310400
+        }
+        ```
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: |
+            User's natural language message to the AI assistant.
+
+            Examples:
+            - "Add a task to buy groceries"
+            - "What are my pending tasks?"
+            - "Mark task 1 as complete"
+            - "Delete the meeting task"
+          example: "Add a task to buy groceries"
+
+        conversation_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: |
+            Optional conversation ID to continue an existing conversation.
+
+            - **Omitted or null**: Creates a new conversation
+            - **Provided**: Loads existing conversation history for context
+
+            **Note**: Must belong to the authenticated user, otherwise returns 404.
+          example: "abc-123-def-456"
+
+    ChatResponse:
+      type: object
+      required:
+        - message_id
+        - conversation_id
+        - role
+        - content
+        - created_at
+      properties:
+        message_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the assistant's message
+          example: "msg-456-xyz-789"
+
+        conversation_id:
+          type: string
+          format: uuid
+          description: |
+            Conversation ID for this message.
+
+            **Note**: If request included `conversation_id`, this ID will be the same. If request was null, this is the newly created conversation ID.
+          example: "conv-abc-123-def"
+
+        role:
+          type: string
+          enum: [assistant]
+          description: Always "assistant" for API responses (user messages persisted but not returned)
+          example: "assistant"
+
+        content:
+          type: string
+          maxLength: 10000
+          description: |
+            AI assistant's natural language response.
+
+            May include:
+            - Confirmations of actions taken
+            - Answers to questions
+            - Clarification requests
+            - Error messages (user-friendly)
+          example: "I've added the task 'buy groceries' to your list. Is there anything else you'd like to add?"
+
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the assistant message was created (ISO 8601)
+          example: "2025-01-15T10:30:45Z"
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          enum:
+            - validation_error
+            - unauthorized
+            - forbidden
+            - not_found
+            - rate_limit_exceeded
+            - internal_error
+            - service_unavailable
+          description: Machine-readable error code
+          example: "validation_error"
+
+        message:
+          type: string
+          description: Human-readable error message (user-friendly, no technical details)
+          example: "Message content cannot be empty"
+
+        details:
+          oneOf:
+            - type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: "message"
+                  issue:
+                    type: string
+                    example: "required field missing or empty"
+            - type: object
+              additionalProperties: true
+              description: Additional error context (e.g., retry_after for rate limits)
+            - type: null
+          description: |
+            Optional additional error details.
+
+            - For validation errors: Array of field-level validation issues
+            - For rate limits: Object with `retry_after` (seconds)
+            - For other errors: null or additional context
+          example:
+            retry_after: 30
+
+  examples:
+    SuccessfulTaskCreation:
+      value:
+        message_id: "msg-456-xyz"
+        conversation_id: "conv-abc-123"
+        role: "assistant"
+        content: "I've added the task 'buy groceries' to your list. Is there anything else you'd like to add?"
+        created_at: "2025-01-15T10:30:45Z"
+
+    ValidationError:
+      value:
+        error: "validation_error"
+        message: "Message content cannot be empty"
+        details:
+          - field: "message"
+            issue: "required field missing or empty"
+
+    UnauthorizedError:
+      value:
+        error: "unauthorized"
+        message: "Invalid or missing JWT token"
+        details: null
+
+    RateLimitError:
+      value:
+        error: "rate_limit_exceeded"
+        message: "Too many messages. Please wait before trying again."
+        details:
+          retry_after: 30

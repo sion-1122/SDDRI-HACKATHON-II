@@ -2,6 +2,9 @@
 
 [Task]: T009
 [From]: specs/001-user-auth/plan.md
+
+[Task]: T003
+[From]: specs/004-ai-chatbot/plan.md
 """
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,6 +27,10 @@ class Settings(BaseSettings):
 
     # Environment
     environment: str = "development"
+
+    # Gemini API (Phase III: AI Chatbot)
+    gemini_api_key: str | None = None  # Optional for migration/setup
+    gemini_model: str = "gemini-2.0-flash-exp"
 
     model_config = SettingsConfigDict(
         env_file=".env",

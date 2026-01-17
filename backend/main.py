@@ -13,6 +13,7 @@ from core.database import init_db, engine
 from core.config import get_settings
 from api.auth import router as auth_router
 from api.tasks import router as tasks_router
+from api.chat import router as chat_router
 
 settings = get_settings()
 
@@ -61,6 +62,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)  # Authentication endpoints
 app.include_router(tasks_router)  # Task management endpoints
+app.include_router(chat_router)  # AI chat endpoints (Phase III)
 
 
 @app.get("/")
@@ -69,8 +71,12 @@ async def root():
     return {
         "message": "Todo List API",
         "status": "running",
-        "version": "1.0.0",
-        "authentication": "JWT"
+        "version": "2.0.0",
+        "authentication": "JWT",
+        "features": {
+            "task_management": "REST API for CRUD operations",
+            "ai_chatbot": "Natural language task creation and listing"
+        }
     }
 
 
