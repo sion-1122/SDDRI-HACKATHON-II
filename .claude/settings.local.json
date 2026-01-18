@@ -49,7 +49,8 @@
       "Bash(else echo \"No checklists directory\")",
       "Bash(fi:*)",
       "Bash(uv remove:*)",
-      "Bash(PYTHONPATH=backend uv run pytest:*)"
+      "Bash(PYTHONPATH=backend uv run pytest:*)",
+      "Bash(gh pr create:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

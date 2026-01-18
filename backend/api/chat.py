@@ -7,15 +7,18 @@ This endpoint provides a conversational interface for task management.
 Users can create, list, update, complete, and delete tasks through natural language.
 """
 import uuid
+import logging
 from datetime import datetime
 from typing import Annotated, Optional
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from sqlmodel import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.database import get_db
 from core.validators import validate_message_length
 from models.message import Message, MessageRole
+from services.security import sanitize_message
 from models.conversation import Conversation
 from ai_agent import run_agent, is_gemini_configured
 from services.conversation import (
@@ -24,6 +27,11 @@ from services.conversation import (
     update_conversation_timestamp
 )
 from services.rate_limiter import check_rate_limit
+
+
+# Configure error logger
+error_logger = logging.getLogger("api.errors")
+error_logger.setLevel(logging.ERROR)
 
 
 # Request/Response models
@@ -119,61 +127,117 @@ async def chat(
     """
     # Check if Gemini API is configured
     # [From]: specs/004-ai-chatbot/tasks.md - T022
+    # [From]: T060 - Add comprehensive error messages for edge cases
     if not is_gemini_configured():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI service is not configured. Please contact administrator."
+            detail={
+                "error": "AI service unavailable",
+                "message": "The AI service is currently not configured. Please ensure GEMINI_API_KEY is set in the environment.",
+                "suggestion": "Contact your administrator or check your API key configuration."
+            }
         )
 
     # Validate user_id format
+    # [From]: T060 - Add comprehensive error messages for edge cases
     try:
         user_uuid = uuid.UUID(user_id)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user ID format"
+            detail={
+                "error": "Invalid user ID",
+                "message": f"User ID '{user_id}' is not a valid UUID format.",
+                "expected_format": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "suggestion": "Ensure you are using a valid UUID for the user_id path parameter."
+            }
         )
 
     # Validate message content
+    # [From]: T060 - Add comprehensive error messages for edge cases
     try:
         validated_message = validate_message_length(request.message)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+            detail={
+                "error": "Message validation failed",
+                "message": str(e),
+                "max_length": 10000,
+                "suggestion": "Keep your message under 10,000 characters and ensure it contains meaningful content."
+            }
+        )
+
+    # Sanitize message to prevent prompt injection
+    # [From]: T057 - Implement prompt injection sanitization
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        sanitized_message = sanitize_message(validated_message)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Message content blocked",
+                "message": str(e),
+                "suggestion": "Please rephrase your message without attempting to manipulate system instructions."
+            }
         )
 
     # Check rate limit
     # [From]: specs/004-ai-chatbot/spec.md - NFR-011
     # [From]: T021 - Implement daily message limit enforcement (100/day)
-    allowed, remaining, reset_time = check_rate_limit(db, user_uuid)
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        allowed, remaining, reset_time = check_rate_limit(db, user_uuid)
 
-    if not allowed:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={
-                "error": "Daily message limit exceeded",
-                "limit": 100,
-                "resets_at": reset_time.isoformat() if reset_time else None
-            }
-        )
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error": "Rate limit exceeded",
+                    "message": "You have reached the daily message limit. Please try again later.",
+                    "limit": 100,
+                    "resets_at": reset_time.isoformat() if reset_time else None,
+                    "suggestion": "Free tier accounts are limited to 100 messages per day. Upgrade for unlimited access."
+                }
+            )
+    except HTTPException:
+        # Re-raise HTTP exceptions (rate limit errors)
+        raise
+    except Exception as e:
+        # Log unexpected errors but don't block the request
+        error_logger.error(f"Rate limit check failed for user {user_id}: {e}")
+        # Continue processing - fail open for rate limit errors
 
     # Get or create conversation
     # [From]: T016 - Implement conversation history loading
     # [From]: T035 - Handle auto-deleted conversations gracefully
+    # [From]: T060 - Add comprehensive error messages for edge cases
     conversation_id: uuid.UUID
 
     if request.conversation_id:
         # Load existing conversation using service
         try:
             conv_uuid = uuid.UUID(request.conversation_id)
+        except ValueError:
+            # Invalid conversation_id format
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "Invalid conversation ID",
+                    "message": f"Conversation ID '{request.conversation_id}' is not a valid UUID format.",
+                    "suggestion": "Provide a valid UUID or omit the conversation_id to start a new conversation."
+                }
+            )
+
+        try:
             conversation = get_or_create_conversation(
                 db=db,
                 user_id=user_uuid,
                 conversation_id=conv_uuid
             )
             conversation_id = conversation.id
-        except (ValueError, KeyError) as e:
+        except (KeyError, ValueError) as e:
             # Conversation may have been auto-deleted (90-day policy) or otherwise not found
             # [From]: T035 - Handle auto-deleted conversations gracefully
             # Create a new conversation instead of failing
@@ -192,26 +256,46 @@ async def chat(
 
     # Persist user message before AI processing
     # [From]: T017 - Add user message persistence before AI processing
-    user_message = Message(
-        id=uuid.uuid4(),
-        conversation_id=conversation_id,
-        user_id=user_uuid,
-        role=MessageRole.USER,
-        content=validated_message,
-        created_at=datetime.utcnow()
-    )
-    db.add(user_message)
-    db.commit()
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        user_message = Message(
+            id=uuid.uuid4(),
+            conversation_id=conversation_id,
+            user_id=user_uuid,
+            role=MessageRole.USER,
+            content=sanitized_message,
+            created_at=datetime.utcnow()
+        )
+        db.add(user_message)
+        db.commit()
+    except SQLAlchemyError as e:
+        error_logger.error(f"Database error saving user message for user {user_id}: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "Database error",
+                "message": "Failed to save your message. Please try again.",
+                "suggestion": "If the problem persists, the database may be temporarily unavailable."
+            }
+        )
 
     # Load conversation history using service
     # [From]: T016 - Implement conversation history loading
-    conversation_history = load_conversation_history(
-        db=db,
-        conversation_id=conversation_id
-    )
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        conversation_history = load_conversation_history(
+            db=db,
+            conversation_id=conversation_id
+        )
+    except SQLAlchemyError as e:
+        error_logger.error(f"Database error loading conversation history for {conversation_id}: {e}")
+        # Continue with empty history if load fails
+        conversation_history = []
 
     # Run AI agent
     # [From]: T014 - Initialize OpenAI Agents SDK with Gemini
+    # [From]: T060 - Add comprehensive error messages for edge cases
     try:
         ai_response_text = await run_agent(
             messages=conversation_history,
@@ -220,47 +304,81 @@ async def chat(
     except ValueError as e:
         # Configuration errors (missing API key, invalid model)
         # [From]: T022 - Add error handling for Gemini API unavailability
+        error_logger.error(f"AI configuration error for user {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "AI service configuration error", "message": str(e)}
+            detail={
+                "error": "AI service configuration error",
+                "message": str(e),
+                "suggestion": "Verify GEMINI_API_KEY and GEMINI_MODEL are correctly configured."
+            }
         )
     except ConnectionError as e:
         # Network/connection issues
         # [From]: T022 - Add error handling for Gemini API unavailability
+        error_logger.error(f"AI connection error for user {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "AI service unreachable", "message": str(e)}
+            detail={
+                "error": "AI service unreachable",
+                "message": "Could not connect to the AI service. Please check your network connection.",
+                "suggestion": "If the problem persists, the AI service may be temporarily down."
+            }
         )
     except TimeoutError as e:
         # Timeout errors
         # [From]: T022 - Add error handling for Gemini API unavailability
+        error_logger.error(f"AI timeout error for user {user_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail={"error": "AI service timeout", "message": str(e)}
+            detail={
+                "error": "AI service timeout",
+                "message": "The AI service took too long to respond. Please try again.",
+                "suggestion": "Your message may be too complex. Try breaking it into smaller requests."
+            }
         )
     except Exception as e:
         # Other errors (rate limits, authentication, context, etc.)
         # [From]: T022 - Add error handling for Gemini API unavailability
+        error_logger.error(f"Unexpected AI error for user {user_id}: {type(e).__name__}: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"error": "AI service error", "message": str(e)}
+            detail={
+                "error": "AI service error",
+                "message": f"An unexpected error occurred: {str(e)}",
+                "suggestion": "Please try again later or contact support if the problem persists."
+            }
         )
 
     # Persist AI response
     # [From]: T018 - Add AI response persistence after processing
-    ai_message = Message(
-        id=uuid.uuid4(),
-        conversation_id=conversation_id,
-        user_id=user_uuid,
-        role=MessageRole.ASSISTANT,
-        content=ai_response_text,
-        created_at=datetime.utcnow()
-    )
-    db.add(ai_message)
-    db.commit()
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        ai_message = Message(
+            id=uuid.uuid4(),
+            conversation_id=conversation_id,
+            user_id=user_uuid,
+            role=MessageRole.ASSISTANT,
+            content=ai_response_text,
+            created_at=datetime.utcnow()
+        )
+        db.add(ai_message)
+        db.commit()
+    except SQLAlchemyError as e:
+        error_logger.error(f"Database error saving AI response for user {user_id}: {e}")
+        db.rollback()
+        # Return the response anyway since AI processing succeeded
+        # The message was processed, just not saved
+        pass
 
     # Update conversation timestamp using service
-    update_conversation_timestamp(db=db, conversation_id=conversation_id)
+    # [From]: T060 - Add comprehensive error messages for edge cases
+    try:
+        update_conversation_timestamp(db=db, conversation_id=conversation_id)
+    except SQLAlchemyError as e:
+        error_logger.error(f"Database error updating conversation timestamp for {conversation_id}: {e}")
+        # Non-critical error, don't fail the request
+        pass
 
     # TODO: Parse AI response for task references
     # This will be enhanced in future tasks to extract task IDs from AI responses
