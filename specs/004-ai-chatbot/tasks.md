@@ -106,16 +106,16 @@
 
 ### Tests for User Story 6
 
-- [ ] T028 [P] [US6] Integration test for conversation persistence in backend/tests/integration/test_conversation_persistence.py
-- [ ] T029 [P] [US6] Test for 90-day auto-deletion policy in backend/tests/integration/test_conversation_retention.py
+- [X] T028 [P] [US6] Integration test for conversation persistence in backend/tests/integration/test_conversation_persistence.py
+- [ ] T029 [P] [US6] Test for 90-day auto-deletion policy in backend/tests/integration/test_conversation_retention.py (FUTURE - 90-day feature deferred)
 
 ### Implementation for User Story 6
 
 - [X] T030 [P] [US6] Implement conversation loading by conversation_id in backend/services/conversation.py
 - [X] T031 [P] [US6] Add conversation creation flow when no conversation_id provided in backend/services/conversation.py
 - [X] T032 [US6] Store conversation_id in frontend chat state in frontend/components/chat/ChatInterface.tsx
-- [ ] T033 [US6] Implement 90-day conversation auto-deletion job in backend/services/conversation_cleanup.py
-- [ ] T034 [US6] Add conversation.updated_at trigger on message creation in backend/models/message.py
+- [ ] T033 [US6] Implement 90-day conversation auto-deletion job in backend/services/conversation_cleanup.py (FUTURE - 90-day feature deferred)
+- [X] T034 [US6] Add conversation.updated_at trigger on message creation in backend/models/message.py (trigger exists in migration)
 - [X] T035 [US6] Handle auto-deleted conversations gracefully in backend/api/chat.py
 
 **Checkpoint**: At this point, User Stories 1, 2, AND 6 should all work independently

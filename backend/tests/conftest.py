@@ -29,10 +29,8 @@ def test_db_engine(tmp_path):
     Uses file-based storage to avoid issues with in-memory database connection isolation.
     Also patches the global database engine to ensure the app uses this test database.
     """
-    from core import config
-
-    # Store original engine
-    original_engine = config.engine
+    from core.database import engine as original_engine
+    import core.database
 
     # Create test database file
     db_file = tmp_path / "test.db"
@@ -40,12 +38,12 @@ def test_db_engine(tmp_path):
     SQLModel.metadata.create_all(test_engine)
 
     # Patch the global engine
-    config.engine = test_engine
+    core.database.engine = test_engine
 
     yield test_engine
 
     # Restore original engine
-    config.engine = original_engine
+    core.database.engine = original_engine
 
 
 @pytest.fixture(name="test_session")

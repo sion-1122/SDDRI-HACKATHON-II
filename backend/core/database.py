@@ -15,18 +15,38 @@ settings = get_settings()
 
 # Create database engine with connection pooling
 # Optimized for conversation/message table queries in Phase III
-engine = create_engine(
-    settings.database_url,
-    echo=settings.environment == "development",  # Log SQL in development
-    pool_pre_ping=True,  # Verify connections before using
-    pool_size=10,  # Number of connections to maintain
-    max_overflow=20,  # Additional connections beyond pool_size
-    pool_recycle=3600,  # Recycle connections after 1 hour (prevents stale connections)
-    pool_timeout=30,  # Timeout for getting connection from pool
-    connect_args={
-        "connect_timeout": 10,  # Connection timeout
-    }
-)
+# SQLite doesn't support connection pooling, so we conditionally apply parameters
+is_sqlite = settings.database_url.startswith("sqlite:")
+is_postgresql = settings.database_url.startswith("postgresql:") or settings.database_url.startswith("postgres://")
+
+if is_sqlite:
+    # SQLite configuration (no pooling)
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.environment == "development",  # Log SQL in development
+        connect_args={"check_same_thread": False}  # Allow multithreaded access
+    )
+elif is_postgresql:
+    # PostgreSQL configuration with connection pooling
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.environment == "development",  # Log SQL in development
+        pool_pre_ping=True,  # Verify connections before using
+        pool_size=10,  # Number of connections to maintain
+        max_overflow=20,  # Additional connections beyond pool_size
+        pool_recycle=3600,  # Recycle connections after 1 hour (prevents stale connections)
+        pool_timeout=30,  # Timeout for getting connection from pool
+        connect_args={
+            "connect_timeout": 10,  # Connection timeout
+        }
+    )
+else:
+    # Default configuration for other databases
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.environment == "development",
+        pool_pre_ping=True
+    )
 
 
 def get_session() -> Generator[Session, None, None]:
