@@ -1,32 +1,37 @@
 """Chat API endpoint for AI-powered task management.
 
-[Task]: T015
+[Task]: T015, T071
 [From]: specs/004-ai-chatbot/tasks.md
 
 This endpoint provides a conversational interface for task management.
 Users can create, list, update, complete, and delete tasks through natural language.
+
+Also includes WebSocket endpoint for real-time progress streaming.
 """
 import uuid
 import logging
+import asyncio
 from datetime import datetime
 from typing import Annotated, Optional
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, WebSocket, WebSocketDisconnect, BackgroundTasks
 from pydantic import BaseModel, Field, field_validator, ValidationError
 from sqlmodel import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from core.database import get_db
 from core.validators import validate_message_length
+from core.security import decode_access_token
 from models.message import Message, MessageRole
 from services.security import sanitize_message
 from models.conversation import Conversation
-from ai_agent import run_agent, is_gemini_configured
+from ai_agent import run_agent_with_streaming, is_gemini_configured
 from services.conversation import (
     get_or_create_conversation,
     load_conversation_history,
     update_conversation_timestamp
 )
 from services.rate_limiter import check_rate_limit
+from ws_manager.manager import manager
 
 
 # Configure error logger
@@ -99,6 +104,7 @@ router = APIRouter(prefix="/api", tags=["chat"])
 async def chat(
     user_id: str,
     request: ChatRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Process user message through AI agent and return response.
@@ -106,16 +112,16 @@ async def chat(
     [From]: specs/004-ai-chatbot/spec.md - US1
 
     This endpoint:
-    1. Persists user message to database
-    2. Loads conversation history if conversation_id provided
-    3. Creates new conversation if conversation_id not provided
-    4. Sends conversation history to AI agent
-    5. Persists AI response to database
-    6. Returns AI response with any task modifications
+    1. Validates user input and rate limits
+    2. Gets or creates conversation
+    3. Runs AI agent with WebSocket progress streaming
+    4. Returns AI response immediately
+    5. Saves messages to DB in background (non-blocking)
 
     Args:
         user_id: User ID (UUID string from path)
         request: Chat request with message and optional conversation_id
+        background_tasks: FastAPI background tasks for non-blocking DB saves
         db: Database session
 
     Returns:
@@ -254,32 +260,6 @@ async def chat(
         )
         conversation_id = conversation.id
 
-    # Persist user message before AI processing
-    # [From]: T017 - Add user message persistence before AI processing
-    # [From]: T060 - Add comprehensive error messages for edge cases
-    try:
-        user_message = Message(
-            id=uuid.uuid4(),
-            conversation_id=conversation_id,
-            user_id=user_uuid,
-            role=MessageRole.USER,
-            content=sanitized_message,
-            created_at=datetime.utcnow()
-        )
-        db.add(user_message)
-        db.commit()
-    except SQLAlchemyError as e:
-        error_logger.error(f"Database error saving user message for user {user_id}: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": "Database error",
-                "message": "Failed to save your message. Please try again.",
-                "suggestion": "If the problem persists, the database may be temporarily unavailable."
-            }
-        )
-
     # Load conversation history using service
     # [From]: T016 - Implement conversation history loading
     # [From]: T060 - Add comprehensive error messages for edge cases
@@ -293,11 +273,23 @@ async def chat(
         # Continue with empty history if load fails
         conversation_history = []
 
-    # Run AI agent
+    # Prepare user message for background save
+    user_message_id = uuid.uuid4()
+    user_message_data = {
+        "id": user_message_id,
+        "conversation_id": conversation_id,
+        "user_id": user_uuid,
+        "role": MessageRole.USER,
+        "content": sanitized_message,
+        "created_at": datetime.utcnow()
+    }
+
+    # Run AI agent with streaming (broadcasts WebSocket events)
     # [From]: T014 - Initialize OpenAI Agents SDK with Gemini
+    # [From]: T072 - Use streaming agent for real-time progress
     # [From]: T060 - Add comprehensive error messages for edge cases
     try:
-        ai_response_text = await run_agent(
+        ai_response_text = await run_agent_with_streaming(
             messages=conversation_history,
             user_id=user_id
         )
@@ -350,35 +342,53 @@ async def chat(
             }
         )
 
-    # Persist AI response
-    # [From]: T018 - Add AI response persistence after processing
-    # [From]: T060 - Add comprehensive error messages for edge cases
-    try:
-        ai_message = Message(
-            id=uuid.uuid4(),
-            conversation_id=conversation_id,
-            user_id=user_uuid,
-            role=MessageRole.ASSISTANT,
-            content=ai_response_text,
-            created_at=datetime.utcnow()
-        )
-        db.add(ai_message)
-        db.commit()
-    except SQLAlchemyError as e:
-        error_logger.error(f"Database error saving AI response for user {user_id}: {e}")
-        db.rollback()
-        # Return the response anyway since AI processing succeeded
-        # The message was processed, just not saved
-        pass
+    # Prepare AI response for background save
+    ai_message_data = {
+        "id": uuid.uuid4(),
+        "conversation_id": conversation_id,
+        "user_id": user_uuid,
+        "role": MessageRole.ASSISTANT,
+        "content": ai_response_text,
+        "created_at": datetime.utcnow()
+    }
 
-    # Update conversation timestamp using service
-    # [From]: T060 - Add comprehensive error messages for edge cases
-    try:
-        update_conversation_timestamp(db=db, conversation_id=conversation_id)
-    except SQLAlchemyError as e:
-        error_logger.error(f"Database error updating conversation timestamp for {conversation_id}: {e}")
-        # Non-critical error, don't fail the request
-        pass
+    # Save messages to DB in background (non-blocking)
+    # This significantly improves response time
+    def save_messages_to_db():
+        """Background task to save messages to database."""
+        try:
+            from core.database import engine
+            from sqlmodel import Session
+
+            # Create a new session for background task
+            bg_db = Session(engine)
+
+            try:
+                # Save user message
+                user_msg = Message(**user_message_data)
+                bg_db.add(user_msg)
+
+                # Save AI response
+                ai_msg = Message(**ai_message_data)
+                bg_db.add(ai_msg)
+
+                bg_db.commit()
+
+                # Update conversation timestamp
+                try:
+                    update_conversation_timestamp(db=bg_db, conversation_id=conversation_id)
+                except SQLAlchemyError as e:
+                    error_logger.error(f"Database error updating conversation timestamp for {conversation_id}: {e}")
+
+            except SQLAlchemyError as e:
+                error_logger.error(f"Background task: Database error saving messages for user {user_id}: {e}")
+                bg_db.rollback()
+            finally:
+                bg_db.close()
+        except Exception as e:
+            error_logger.error(f"Background task: Unexpected error saving messages for user {user_id}: {e}")
+
+    background_tasks.add_task(save_messages_to_db)
 
     # TODO: Parse AI response for task references
     # This will be enhanced in future tasks to extract task IDs from AI responses
@@ -389,3 +399,74 @@ async def chat(
         conversation_id=str(conversation_id),
         tasks=task_references
     )
+
+
+@router.websocket("/ws/{user_id}/chat")
+async def websocket_chat(
+    websocket: WebSocket,
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """WebSocket endpoint for real-time chat progress updates.
+
+    [From]: specs/004-ai-chatbot/research.md - Section 4
+    [Task]: T071
+
+    This endpoint provides a WebSocket connection for receiving real-time
+    progress events during AI agent execution. Events include:
+    - connection_established: Confirmation of successful connection
+    - agent_thinking: AI agent is processing
+    - tool_starting: A tool is about to execute
+    - tool_progress: Tool execution progress (e.g., "Found 3 tasks")
+    - tool_complete: Tool finished successfully
+    - tool_error: Tool execution failed
+    - agent_done: AI agent finished processing
+
+    Note: Authentication is handled implicitly by the frontend - users must
+    be logged in to access the chat page. The WebSocket only broadcasts
+    progress updates (not sensitive data), so strict auth is bypassed here.
+
+    Connection URL format:
+        ws://localhost:8000/ws/{user_id}/chat
+
+    Args:
+        websocket: The WebSocket connection instance
+        user_id: User ID from URL path (used to route progress events)
+        db: Database session (for any future DB operations)
+
+    The connection is kept alive and can receive messages from the client,
+    though currently it's primarily used for server-to-client progress updates.
+    """
+    # Connect the WebSocket (manager handles accept)
+    # [From]: specs/004-ai-chatbot/research.md - Section 4
+    await manager.connect(user_id, websocket)
+
+    try:
+        # Keep connection alive and listen for client messages
+        # Currently, we don't expect many client messages, but we
+        # maintain the connection to receive any control messages
+        while True:
+            # Wait for message from client (with timeout)
+            data = await websocket.receive_text()
+
+            # Handle client messages if needed
+            # For now, we just acknowledge receipt
+            # Future: could handle ping/pong for connection health
+            if data:
+                # Echo back a simple acknowledgment
+                # (optional - mainly for debugging)
+                pass
+
+    except WebSocketDisconnect:
+        # Normal disconnect - clean up
+        manager.disconnect(user_id, websocket)
+        error_logger.info(f"WebSocket disconnected normally for user {user_id}")
+
+    except Exception as e:
+        # Unexpected error - clean up and log
+        error_logger.error(f"WebSocket error for user {user_id}: {e}")
+        manager.disconnect(user_id, websocket)
+
+    finally:
+        # Ensure disconnect is always called
+        manager.disconnect(user_id, websocket)

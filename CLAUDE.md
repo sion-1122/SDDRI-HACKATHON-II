@@ -40,8 +40,8 @@ Python 3.13+: Follow standard conventions
 
 ## Recent Changes
 - 004-ai-chatbot: Added Python 3.13+ (backend), TypeScript 5+ (frontend chat UI)
+- 004-ai-chatbot: Added Python 3.13+ (backend), TypeScript 5+ (frontend chat UI)
 - 003-frontend-task-manager: Added TypeScript 5+ with Next.js 16.1.1 and React 19.2.3 + Next.js (App Router), React 19, Better Auth 1.4.10, Tailwind CSS 4, Zod (validation), Sonner (toast notifications)
-- 001-backend-task-api: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
 
 <!-- MANUAL ADDITIONS START -->

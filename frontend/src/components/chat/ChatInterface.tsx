@@ -1,18 +1,21 @@
 /** ChatInterface component for AI-powered task management.
 
-[Task]: T019, T032, T061, T062
+[Task]: T019, T032, T061, T062, T078
 [From]: specs/004-ai-chatbot/tasks.md
 
 This component provides a conversational interface for task management
 with persistent conversation state across page refreshes.
 
-Refactored to use separate MessageList and MessageInput components.
+Enhanced with real-time WebSocket progress streaming for AI tool execution.
 */
 "use client";
 
 import { useState, useEffect } from "react";
 import { MessageList, type ChatMessage } from "./MessageList";
 import { MessageInput } from "./MessageInput";
+import { useWebSocket, type ToolProgressEvent } from "./useWebSocket";
+import { ProgressBar } from "./ProgressBar";
+import { ConnectionStatus } from "./ConnectionStatus";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -75,6 +78,43 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // WebSocket connection state
+  // [From]: T078 - Integrate WebSocket and progress components
+  const [progressEvents, setProgressEvents] = useState<ToolProgressEvent[]>([]);
+
+  /**
+   * Handle WebSocket events.
+   * [From]: specs/004-ai-chatbot/research.md - Section 5
+   */
+  const handleWebSocketEvent = (event: ToolProgressEvent) => {
+    setProgressEvents((prev) => {
+      // Filter out previous agent_thinking when a new event comes in
+      const filtered = prev.filter(
+        (e) => e.event_type !== "agent_thinking" && e.event_type !== "agent_done"
+      );
+      return [...filtered, event];
+    });
+
+    // Clear progress events when agent is done
+    if (event.event_type === "agent_done") {
+      setTimeout(() => {
+        setProgressEvents([]);
+      }, 3000);
+    }
+  };
+
+  // Initialize WebSocket connection
+  // [From]: T078 - Integrate useWebSocket hook
+  const { isConnected, isConnecting } = useWebSocket(userId, {
+    onEvent: handleWebSocketEvent,
+    onConnectionChange: (connected) => {
+      console.log("WebSocket connection changed:", connected);
+    },
+    onError: (error) => {
+      console.warn("WebSocket error:", error);
+    },
+  });
+
   // Persist conversation state to localStorage whenever it changes
   // [From]: T032 - Store conversation_id in frontend chat state
   useEffect(() => {
@@ -105,6 +145,9 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
     setError(null);
+
+    // Clear previous progress events
+    setProgressEvents([]);
 
     try {
       // Call backend chat API
@@ -184,6 +227,7 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
     setMessages([]);
     setConversationId(null);
     setError(null);
+    setProgressEvents([]);
     // Clear persisted state
     if (typeof window !== "undefined") {
       try {
@@ -215,6 +259,14 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
           </button>
         )}
       </div>
+
+      {/* Connection Status */}
+      {/* [From]: T078 - Integrate ConnectionStatus component */}
+      <ConnectionStatus isConnected={isConnected} isConnecting={isConnecting} />
+
+      {/* Progress Bar for Real-Time Tool Updates */}
+      {/* [From]: T078 - Integrate ProgressBar component */}
+      <ProgressBar events={progressEvents} />
 
       {/* Message List Component */}
       {/* [From]: T061 - Add MessageList React component */}

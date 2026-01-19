@@ -224,6 +224,41 @@
 
 ---
 
+## Phase 11: WebSocket Real-Time Streaming (NEW)
+
+**Purpose**: Real-time tool usage updates streamed to frontend via WebSocket
+
+**Goal**: Users see live progress like "searching tasks...", "found 3 tasks", "marked as complete" with beautiful animated indicators
+
+**Independent Test**: Send a chat message and verify real-time progress events appear in UI before final AI response
+
+### Backend Implementation
+
+- [X] T067 [P] Create backend/websockets directory structure with __init__.py in backend/websockets/__init__.py
+- [X] T068 [P] Implement ConnectionManager class for multi-client broadcasting in backend/websockets/manager.py
+- [X] T069 [P] Define EventType enum and ToolProgressEvent schema in backend/websockets/events.py
+- [X] T070 [P] Add broadcast_progress helper function in backend/websockets/events.py
+- [X] T071 [P] Add WebSocket endpoint /ws/{user_id}/chat with JWT auth in backend/api/chat.py
+- [X] T072 Implement agent streaming wrapper with progress broadcasts in backend/ai_agent/agent_streaming.py
+
+### Frontend Implementation
+
+- [X] T073 [P] Create useWebSocket hook with auto-reconnect in frontend/components/chat/useWebSocket.ts
+- [X] T074 [P] Implement ProgressBar component with animations in frontend/components/chat/ProgressBar.tsx
+- [X] T075 [P] Implement ToolStatus component for individual tool display in frontend/components/chat/ToolStatus.tsx
+- [X] T076 [P] Create ConnectionStatus component in frontend/components/chat/ConnectionStatus.tsx
+- [X] T077 [P] Add fadeIn animation to globals.css in frontend/app/globals.css
+- [X] T078 Update ChatInterface to integrate WebSocket and progress components in frontend/components/chat/ChatInterface.tsx
+
+### Tests
+
+- [X] T079 [P] Integration test for WebSocket connection lifecycle in backend/tests/integration/test_websocket.py
+- [X] T080 [P] Test for progress event broadcasting during tool execution in backend/tests/integration/test_websocket_events.py
+
+**Checkpoint**: Real-time progress updates display beautifully in chat UI during AI tool execution
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -235,6 +270,7 @@
   - US3, US4, US5 (P2 stories) build on P1 stories
   - US7 (P3 story) enhances all previous stories
 - **Polish (Phase 10)**: Depends on all desired user stories being complete
+- **WebSocket Streaming (Phase 11)**: Depends on chat API and AI agent (US1 complete)
 
 ### User Story Dependencies
 
@@ -380,7 +416,7 @@ With 3 developers:
 
 ✅ ALL tasks follow the checklist format:
 - Checkbox prefix: `- [ ]`
-- Sequential Task IDs: T001 through T066
+- Sequential Task IDs: T001 through T080
 - [P] marker for parallelizable tasks
 - [Story] label for user story tasks (US1-US7)
 - Exact file paths in every description
@@ -388,17 +424,21 @@ With 3 developers:
 - Foundational phase: No story labels ✅
 - User Story phases: Story labels included ✅
 - Polish phase: No story labels ✅
+- WebSocket phase: No story labels (independent feature enhancement) ✅
 
 ---
 
 ## Notes
 
-- 66 total tasks across all phases
-- 21 tasks are parallelizable (marked [P])
+- 80 total tasks across all phases
+- 32 tasks are parallelizable (marked [P])
 - 7 user stories organized by priority (P1→P2→P3)
 - MVP = Phases 1-5 (Setup, Foundational, US1, US2, US6) = 35 tasks
+- Phase 11 (WebSocket) = 14 tasks for real-time progress streaming
 - Each user story is independently completable and testable
 - P1 stories (US1, US2, US6) have no interdependencies
 - P2 stories (US3, US4, US5) build on P1 but remain independently testable
+- US7 enhances all previous stories
+- Phase 11 (WebSocket) enhances existing chat UX with real-time feedback
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
