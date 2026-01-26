@@ -55,7 +55,8 @@
       "Skill(sp.plan)",
       "Bash(uv pip install:*)",
       "Bash(timeout:*)",
-      "Skill(sp.git.commit_pr)"
+      "Skill(sp.git.commit_pr)",
+      "Bash(CI=true pnpm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

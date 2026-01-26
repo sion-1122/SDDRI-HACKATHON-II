@@ -239,21 +239,21 @@ export function ChatInterface({ userId }: ChatInterfaceProps) {
   };
 
   return (
-    <div className="flex flex-col h-[600px] border rounded-lg shadow-sm bg-white dark:bg-gray-800 dark:border-gray-700">
+    <div className="flex flex-col h-full w-full border rounded-lg shadow-sm bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+      <div className="flex items-center justify-between p-4 border-b shrink-0">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             Chat
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Ask me to create, list, or manage your tasks
           </p>
         </div>
         {messages.length > 0 && (
           <button
             onClick={handleClearConversation}
-            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white border rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="px-3 py-1 text-sm text-muted-foreground hover:text-foreground border rounded hover:bg-muted transition-colors"
           >
             Clear Chat
           </button>

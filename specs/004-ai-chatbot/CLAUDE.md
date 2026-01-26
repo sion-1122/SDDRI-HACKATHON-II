@@ -9,16 +9,12 @@
 |----|------|---|-------|------|
 | #52 | 3:03 PM | ✅ | Marked WebSocket integration task T078 as complete in tasks.md | ~300 |
 | #51 | 3:01 PM | ✅ | Marked T077 complete in tasks.md for fadeIn animation addition | ~163 |
-| #30 | 2:46 PM | ✅ | Added Phase 11 WebSocket Real-Time Streaming to tasks.md | ~390 |
 | #28 | 2:40 PM | ✅ | Updated plan.md version to 2.0.0 with WebSocket streaming additions | ~252 |
 | #24 | 2:35 PM | 🟣 | Designed WebSocket manager architecture for real-time progress streaming in AI chatbot | ~453 |
 | #23 | " | ✅ | Expanded AI chatbot plan with detailed WebSocket streaming architecture | ~386 |
 | #22 | " | ✅ | Updated plan.md with WebSocket streaming architecture for real-time progress updates | ~444 |
 | #20 | " | ✅ | Updated AI chatbot plan to include WebSocket real-time streaming architecture | ~380 |
-| #19 | 2:34 PM | ✅ | Updated AI chatbot implementation plan with WebSocket streaming feature | ~281 |
 | #18 | 2:22 PM | 🟣 | Completed US6 persistence implementation with integration tests | ~483 |
-| #17 | 2:21 PM | ✅ | Created PR for AI chatbot feature with US6 persistence implementation | ~477 |
 | #14 | 2:11 PM | 🟣 | Completed US6 persistence implementation with test infrastructure fixes | ~388 |
 | #11 | 2:03 PM | ✅ | Updated tasks.md to mark T028 and T034 complete, deferred 90-day auto-deletion feature | ~322 |
-| #10 | 1:51 PM | 🟣 | Implemented Phase 10 security, audit logging, database indexes, and documentation for AI chatbot | ~448 |
 </claude-mem-context>

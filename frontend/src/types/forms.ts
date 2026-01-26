@@ -1,13 +1,17 @@
 /* Form data type definitions.
 
 [Task]: T011
-[From]: specs/003-frontend-task-manager/data-model.md
+[From]: specs/003-frontend-task-manager/data-model.md, specs/005-ux-improvement/data-model.md
 */
+
+import type { TaskPriority } from './task';
 
 // Task Form
 export interface TaskFormData {
   title: string;
   description: string;
+  due_date: string | null;
+  priority: TaskPriority;
 }
 
 export interface TaskFormErrors {
