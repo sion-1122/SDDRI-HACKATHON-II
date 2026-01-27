@@ -368,6 +368,16 @@ When you need to delete all tasks, use the delete_all_tasks function with user_i
                 function_name = tool_call.function.name
                 function_args = tool_call.function.arguments
 
+                # Broadcast tool starting event via WebSocket
+                # [From]: specs/004-ai-chatbot/research.md - Section 6
+                try:
+                    from ws_manager.events import broadcast_tool_starting
+                    # Format tool name for display
+                    display_name = function_name.replace("_", " ").title()
+                    await broadcast_tool_starting(user_id, display_name, {})
+                except Exception as ws_e:
+                    logger.warning(f"Failed to broadcast tool_starting for {function_name}: {ws_e}")
+
                 # Add user_id to function args if not present
                 import json
                 args = json.loads(function_args)
@@ -375,62 +385,48 @@ When you need to delete all tasks, use the delete_all_tasks function with user_i
                     args["user_id"] = user_id
 
                 # Call the appropriate function
-                if function_name == "add_task":
-                    result = await add_task.add_task(**args)
+                try:
+                    if function_name == "add_task":
+                        result = await add_task.add_task(**args)
+                    elif function_name == "list_tasks":
+                        result = await list_tasks.list_tasks(**args)
+                    elif function_name == "update_task":
+                        result = await update_task.update_task(**args)
+                    elif function_name == "complete_task":
+                        result = await complete_task.complete_task(**args)
+                    elif function_name == "delete_task":
+                        result = await delete_task.delete_task(**args)
+                    elif function_name == "complete_all_tasks":
+                        result = await complete_all_tasks.complete_all_tasks(**args)
+                    elif function_name == "delete_all_tasks":
+                        result = await delete_all_tasks.delete_all_tasks(**args)
+                    else:
+                        result = {"error": f"Unknown function: {function_name}"}
+
                     tool_results.append({
                         "tool_call_id": tool_call.id,
                         "role": "tool",
                         "name": function_name,
                         "content": json.dumps(result)
                     })
-                elif function_name == "list_tasks":
-                    result = await list_tasks.list_tasks(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
-                elif function_name == "update_task":
-                    result = await update_task.update_task(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
-                elif function_name == "complete_task":
-                    result = await complete_task.complete_task(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
-                elif function_name == "delete_task":
-                    result = await delete_task.delete_task(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
-                elif function_name == "complete_all_tasks":
-                    result = await complete_all_tasks.complete_all_tasks(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
-                elif function_name == "delete_all_tasks":
-                    result = await delete_all_tasks.delete_all_tasks(**args)
-                    tool_results.append({
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(result)
-                    })
+
+                    # Broadcast tool complete event
+                    try:
+                        from ws_manager.events import broadcast_tool_complete
+                        display_name = function_name.replace("_", " ").title()
+                        await broadcast_tool_complete(user_id, display_name, result)
+                    except Exception as ws_e:
+                        logger.warning(f"Failed to broadcast tool_complete for {function_name}: {ws_e}")
+
+                except Exception as e:
+                    # Broadcast tool error
+                    try:
+                        from ws_manager.events import broadcast_tool_error
+                        display_name = function_name.replace("_", " ").title()
+                        await broadcast_tool_error(user_id, display_name, str(e))
+                    except Exception as ws_e:
+                        logger.warning(f"Failed to broadcast tool_error for {function_name}: {ws_e}")
+                    raise
 
             # Get final response from assistant
             api_messages.append(assistant_message)

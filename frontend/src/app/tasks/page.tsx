@@ -12,20 +12,20 @@ This client component:
 - Integrates pagination with offset calculation (T055)
 - Preserves filters across pages (T057)
 */
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { toast } from 'sonner';
-import { authClient } from '@/lib/auth-client';
-import { taskApi } from '@/lib/task-api';
-import { TaskList } from '@/components/tasks/TaskList';
-import { FilterBar } from '@/components/tasks/FilterBar';
-import { Pagination } from '@/components/tasks/Pagination';
-import { TaskForm } from '@/components/tasks/TaskForm';
-import { Button } from '@/components/ui/Button';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import type { Task } from '@/types/task';
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { taskApi } from "@/lib/task-api";
+import { TaskList } from "@/components/tasks/TaskList";
+import { FilterBar } from "@/components/tasks/FilterBar";
+import { Pagination } from "@/components/tasks/Pagination";
+import { TaskForm } from "@/components/tasks/TaskForm";
+import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import type { Task } from "@/types/task";
 
 const ITEMS_PER_PAGE = 50;
 
@@ -44,9 +44,9 @@ export default function TasksPage() {
 
     try {
       // Read status, search, and page from URL params (T048, T055, T057)
-      const statusParam = searchParams.get('status');
-      const searchParam = searchParams.get('search');
-      const pageParam = searchParams.get('page');
+      const statusParam = searchParams.get("status");
+      const searchParam = searchParams.get("search");
+      const pageParam = searchParams.get("page");
 
       // Convert page to offset: offset = (page - 1) * limit (T055)
       const page = pageParam ? parseInt(pageParam, 10) : 1;
@@ -63,9 +63,9 @@ export default function TasksPage() {
       };
 
       // Convert status filter to completed boolean
-      if (statusParam === 'active') {
+      if (statusParam === "active") {
         params.completed = false;
-      } else if (statusParam === 'completed') {
+      } else if (statusParam === "completed") {
         params.completed = true;
       }
 
@@ -79,11 +79,11 @@ export default function TasksPage() {
       setTasks(response.tasks);
       setTotal(response.total);
     } catch (err: any) {
-      if (err.message === 'Session expired') {
-        router.push('/login');
+      if (err.message === "Session expired") {
+        router.push("/login");
         return;
       }
-      setError(err.message || 'Failed to load tasks');
+      setError(err.message || "Failed to load tasks");
     } finally {
       setLoading(false);
     }
@@ -95,14 +95,14 @@ export default function TasksPage() {
         const { data: session, error } = await authClient.getSession();
 
         if (error || !session) {
-          router.push('/login');
+          router.push("/login");
           return;
         }
 
         // Authenticated - load tasks
         loadTasks();
       } catch (err) {
-        router.push('/login');
+        router.push("/login");
       }
     };
 
@@ -119,8 +119,8 @@ export default function TasksPage() {
   };
 
   // Get current page from URL params
-  const currentPage = searchParams.get('page')
-    ? parseInt(searchParams.get('page')!, 10)
+  const currentPage = searchParams.get("page")
+    ? parseInt(searchParams.get("page")!, 10)
     : 1;
 
   return (
@@ -130,9 +130,7 @@ export default function TasksPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
-            <Button onClick={handleCreateTask}>
-              Create Task
-            </Button>
+            <Button onClick={handleCreateTask}>Create Task</Button>
           </div>
         </div>
       </div>

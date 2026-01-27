@@ -1,11 +1,15 @@
 /* Root layout with HTML structure and metadata.
 
-[Task]: T049
-[From]: specs/001-user-auth/plan.md
+[Task]: T049, T058
+[From]: specs/001-user-auth/plan.md, specs/005-ux-improvement/tasks.md
 */
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { ChatProvider } from "@/components/chatbot/ChatProvider";
+import { FloatingChat } from "@/components/chatbot/FloatingChat";
+import { Toaster } from "sonner";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +41,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <NuqsAdapter>
+          <ChatProvider>
+            {children}
+            <FloatingChat />
+          </ChatProvider>
+          <Toaster />
+        </NuqsAdapter>
       </body>
     </html>
   );

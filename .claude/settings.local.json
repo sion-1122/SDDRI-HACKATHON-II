@@ -50,7 +50,13 @@
       "Bash(fi:*)",
       "Bash(uv remove:*)",
       "Bash(PYTHONPATH=backend uv run pytest:*)",
-      "Bash(gh pr create:*)"
+      "Bash(gh pr create:*)",
+      "mcp__plugin_claude-mem_mcp-search__search",
+      "Skill(sp.plan)",
+      "Bash(uv pip install:*)",
+      "Bash(timeout:*)",
+      "Skill(sp.git.commit_pr)",
+      "Bash(CI=true pnpm install:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

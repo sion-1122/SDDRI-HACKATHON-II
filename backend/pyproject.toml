@@ -12,6 +12,7 @@ dependencies = [
     "fastapi>=0.128.0",
     "google-generativeai>=0.8.0",
     "httpx>=0.28.1",
+    "httpx-ws>=0.8.2",
     "mcp>=0.9.0",
     "openai>=1.0.0",
     "openai-agents>=0.1",
@@ -24,6 +25,7 @@ dependencies = [
     "python-multipart>=0.0.21",
     "sqlmodel>=0.0.31",
     "uvicorn[standard]>=0.40.0",
+    "websockets>=13.0,<14.0",  # Override uvicorn's websockets for legacy module
 ]
 
 [tool.pytest.ini_options]

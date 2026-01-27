@@ -1,178 +1,267 @@
-/* TaskItem component - displays individual task.
+/* TaskItem component - minimalistic Notion-inspired task card.
 
-[Task]: T037
-[From]: specs/003-frontend-task-manager/plan.md
+[Task]: T028-T031, T049-T052, T073
+[From]: specs/005-ux-improvement/tasks.md
 
 This client component:
 - Displays task title, description, completion status, timestamps
 - Includes edit, delete, and toggle complete buttons
-- Shows strikethrough for completed tasks
+- Shows priority badge and due date with urgency indicators
+- Notion-inspired minimalistic design
+- Urgency-based styling with colored border-left accent
+- Optimistic UI updates with rollback on error
 */
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import type { Task } from '@/types/task';
-import { formatRelativeTime } from '@/lib/utils';
-import { taskApi } from '@/lib/task-api';
-import { TaskForm } from './TaskForm';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useState } from "react";
+import { toast } from "sonner";
+import type { Task } from "@/types/task";
+import { formatRelativeDate } from "@/lib/utils";
+import { taskApi } from "@/lib/task-api";
+import { TaskForm } from "./TaskForm";
+import { PriorityBadge } from "./PriorityBadge";
+import { DueDateBadge } from "./DueDateBadge";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/dialog";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
+import { useOptimisticAction } from "@/lib/hooks";
+import { Check } from "lucide-react";
 
 interface TaskItemProps {
   task: Task;
+  onDelete?: (taskId: string) => void;
 }
 
-export function TaskItem({ task }: TaskItemProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isToggling, setIsToggling] = useState(false);
+// Urgency-based border accent colors - subtle Notion-style
+const urgencyBorderColors = {
+  overdue: "border-l-urgency-overdue",
+  "due-today": "border-l-urgency-due-today",
+  "due-soon": "border-l-urgency-due-soon",
+  "due-later": "border-l-urgency-due-later",
+  none: "",
+};
+
+export function TaskItem({ task, onDelete }: TaskItemProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [localTask, setLocalTask] = useState(task);
 
-  // Toggle complete functionality (T039)
+  // Use optimistic action hook for instant UI updates with rollback
+  const { isPending: isToggling, executeOptimistic } = useOptimisticAction();
+  const { isPending: isDeleting, executeOptimistic: executeDelete } =
+    useOptimisticAction();
+
+  const urgencyBorderColor = urgencyBorderColors[localTask.urgency || "none"];
+
+  // Toggle complete functionality with optimistic update [T049]
   const handleToggleComplete = async () => {
-    setIsToggling(true);
-    try {
-      // Optimistic UI update
-      setLocalTask(prev => ({ ...prev, completed: !prev.completed }));
-
-      const updated = await taskApi.toggleComplete(task.id);
-      setLocalTask(updated);
-      toast.success('Task updated');
-    } catch (error: any) {
-      // Rollback on error
-      setLocalTask(task);
-      toast.error(error.message || 'Failed to update task');
-    } finally {
-      setIsToggling(false);
-    }
+    await executeOptimistic({
+      optimisticUpdate: () => {
+        setLocalTask((prev) => ({ ...prev, completed: !prev.completed }));
+      },
+      action: () => taskApi.toggleComplete(task.id),
+      onSuccess: (updated) => {
+        setLocalTask(updated);
+      },
+      onError: () => {
+        setLocalTask(task);
+      },
+      successMessage: localTask.completed
+        ? "Task marked as active"
+        : "Task completed",
+      errorMessage: "Failed to update task",
+    });
   };
 
-  // Delete task functionality (T040)
+  // Delete task functionality with optimistic update [T050]
   const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await taskApi.deleteTask(task.id);
-      toast.success('Task deleted');
-      setShowDeleteModal(false);
-      // Note: The parent component will need to refresh the task list
-      window.location.reload();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete task');
-    } finally {
-      setIsDeleting(false);
-    }
+    await executeDelete({
+      optimisticUpdate: () => {
+        setShowDeleteModal(false);
+      },
+      action: () => taskApi.deleteTask(task.id),
+      onSuccess: () => {
+        onDelete?.(task.id);
+        setTimeout(() => window.location.reload(), 100);
+      },
+      onError: () => {
+        setShowDeleteModal(true);
+      },
+      successMessage: "Task deleted",
+      errorMessage: "Failed to delete task",
+    });
   };
 
-  // Edit functionality (T042)
-  const handleEdit = () => {
-    setShowEditModal(true);
+  const handleTaskUpdated = (updated: Task) => {
+    setLocalTask(updated);
   };
 
   return (
     <>
-      <div className={`bg-white shadow rounded-lg p-6 transition-all ${
-        localTask.completed ? 'opacity-60' : ''
-      }`}>
-        <div className="flex items-start space-x-4">
-          {/* Checkbox */}
+      <div
+        className={cn(
+          // Notion-inspired card with subtle styling [T073]
+          "group relative bg-card border border-border rounded-xl p-4 sm:p-5",
+          "transition-all duration-200",
+          "hover:shadow-md hover:border-muted-foreground/20",
+          // Urgency border accent
+          "border-l-4",
+          urgencyBorderColor,
+          // Completed state
+          localTask.completed && "opacity-60",
+        )}
+      >
+        <div className="flex items-start gap-3 sm:gap-4">
+          {/* Checkbox - Notion-style clean checkbox */}
           <button
             onClick={handleToggleComplete}
             disabled={isToggling}
-            className={`
-              mt-1 flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-colors
-              ${localTask.completed
-                ? 'bg-green-500 border-green-500 text-white'
-                : 'border-gray-300 hover:border-green-500'
-              }
-              disabled:opacity-50
-            `}
-            aria-label={localTask.completed ? 'Mark as incomplete' : 'Mark as complete'}
+            className={cn(
+              "mt-0.5 flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200",
+              localTask.completed
+                ? "bg-primary border-primary text-primary-foreground"
+                : "border-muted-foreground/40 hover:border-primary hover:bg-primary/5",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+            )}
+            aria-label={
+              localTask.completed ? "Mark as incomplete" : "Mark as complete"
+            }
           >
             {isToggling ? (
-              <LoadingSpinner size="sm" className="border-white" />
+              <LoadingSpinner size="xs" className="border-primary-foreground" />
             ) : localTask.completed ? (
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <Check className="w-3.5 h-3.5" strokeWidth={3} />
             ) : null}
           </button>
 
           {/* Task content */}
           <div className="flex-1 min-w-0">
-            <h3 className={`text-lg font-medium ${
-              localTask.completed ? 'line-through text-gray-500' : 'text-gray-900'
-            }`}>
+            {/* Title */}
+            <h3
+              className={cn(
+                "text-base font-medium text-foreground leading-snug",
+                "transition-colors duration-200",
+                localTask.completed && "line-through text-muted-foreground",
+              )}
+            >
               {localTask.title}
             </h3>
+
+            {/* Description */}
             {localTask.description && (
-              <p className={`mt-1 text-sm ${
-                localTask.completed ? 'line-through text-gray-400' : 'text-gray-600'
-              }`}>
+              <p
+                className={cn(
+                  "mt-1 text-sm text-muted-foreground line-clamp-2 leading-relaxed",
+                  "transition-colors duration-200",
+                  localTask.completed &&
+                    "line-through text-muted-foreground/60",
+                )}
+              >
                 {localTask.description}
               </p>
             )}
-            <p className="mt-2 text-xs text-gray-500">
-              Created {formatRelativeTime(localTask.created_at)}
-            </p>
+
+            {/* Meta info: badges and date - subtle row */}
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <PriorityBadge priority={localTask.priority} />
+              <DueDateBadge
+                dueDate={localTask.due_date}
+                urgency={localTask.urgency}
+              />
+              <span className="text-xs text-muted-foreground/70">
+                {formatRelativeDate(localTask.created_at)}
+              </span>
+            </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleEdit}
-              className="text-sm"
+          {/* Action buttons - minimalistic icon-only on hover */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              onClick={() => setShowEditModal(true)}
+              className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Edit task"
             >
-              Edit
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2h3l-1-6H6l1-1z"
+                />
+              </svg>
+            </button>
+            <button
               onClick={() => setShowDeleteModal(true)}
               disabled={isDeleting}
-              className="text-sm"
+              className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Delete task"
             >
-              {isDeleting ? <LoadingSpinner size="sm" /> : 'Delete'}
-            </Button>
+              {isDeleting ? (
+                <LoadingSpinner size="xs" />
+              ) : (
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 011-1h3a1 1 0 011 1v3a4 4 0 004 4h2a2 2 0 002-2v-4a1 1 0 011-1h4a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2V6a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2z"
+                  />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Delete confirmation modal */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Task"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setShowDeleteModal(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </>
-        }
+      {/* Delete confirmation alert */}
+      <AlertDialog
+        open={showDeleteModal}
+        onOpenChange={(open) => !open && setShowDeleteModal(false)}
       >
-        <p className="text-gray-600">
-          Are you sure you want to delete this task? This action cannot be undone.
-        </p>
-      </Modal>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{localTask.title}&quot;?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="secondary">Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit modal */}
       {showEditModal && (
@@ -181,6 +270,7 @@ export function TaskItem({ task }: TaskItemProps) {
           onClose={() => setShowEditModal(false)}
           task={localTask}
           mode="edit"
+          onTaskUpdated={handleTaskUpdated}
         />
       )}
     </>

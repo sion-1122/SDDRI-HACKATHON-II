@@ -3,10 +3,10 @@
 [Task]: T024
 [From]: specs/003-frontend-task-manager/plan.md
 */
-'use client';
+"use client";
 
-import React, { useEffect, useRef } from 'react';
-import { Button } from './Button';
+import React, { useEffect, useRef } from "react";
+import { Button } from "./button";
 
 export interface ModalProps {
   isOpen: boolean;
@@ -28,13 +28,13 @@ export const Modal: React.FC<ModalProps> = ({
   // Handle escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === "Escape" && isOpen) {
         onClose();
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
   // Focus trap
@@ -47,13 +47,13 @@ export const Modal: React.FC<ModalProps> = ({
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
@@ -71,7 +71,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? "modal-title" : undefined}
     >
       <div
         ref={modalRef}
@@ -81,16 +81,17 @@ export const Modal: React.FC<ModalProps> = ({
         {/* Header */}
         {title && (
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
+            <h2
+              id="modal-title"
+              className="text-xl font-semibold text-gray-900"
+            >
               {title}
             </h2>
           </div>
         )}
 
         {/* Body */}
-        <div className="px-6 py-4">
-          {children}
-        </div>
+        <div className="px-6 py-4">{children}</div>
 
         {/* Footer */}
         {footer && (
