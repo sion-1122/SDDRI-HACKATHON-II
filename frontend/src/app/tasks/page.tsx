@@ -23,7 +23,7 @@ import { TaskList } from "@/components/tasks/TaskList";
 import { FilterBar } from "@/components/tasks/FilterBar";
 import { Pagination } from "@/components/tasks/Pagination";
 import { TaskForm } from "@/components/tasks/TaskForm";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { Task } from "@/types/task";
 

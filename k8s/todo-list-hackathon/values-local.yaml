@@ -1,0 +1,33 @@
+# Values for local Minikube deployment
+# Use: helm install todo-list . -f values-local.yaml
+
+# Minimal replicas for local development
+frontend:
+  replicaCount: 1
+  image:
+    pullPolicy: Never  # Use local images, don't pull from registry
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+backend:
+  replicaCount: 1
+  image:
+    pullPolicy: Never  # Use local images, don't pull from registry
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  # Override with local environment or create secret
+  env:
+    databaseUrl: "sqlite:////tmp/todo.db"
+    jwtSecret: "local-dev-secret-do-not-use-in-production"
+    openaiApiKey: "sk-test-key-for-local-development"
+    frontendUrl: "http://localhost"

@@ -66,3 +66,15 @@ htmlcov/
 # Session
 *.session
 *.history
+
+# Kubernetes
+*.secret.yaml
+secrets/
+.kube/
+kubeconfig*
+*.key
+*.crt
+*.helmignore
+
+# Helm
+charts/*.tgz

@@ -1,0 +1,74 @@
+# Backend .dockerignore
+# Exclude files and directories not needed in Docker build context
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Documentation
+*.md
+!README.md
+docs/_build/
+
+# Database
+*.db
+*.sqlite3
+*.sqlite
+
+# Node modules (if any frontend static files are copied)
+node_modules/
+
+# Frontend build artifacts (if served via nginx)
+.next/
+out/
+dist/

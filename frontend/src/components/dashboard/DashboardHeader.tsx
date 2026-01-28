@@ -14,7 +14,7 @@ This client component:
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { TaskForm } from "@/components/tasks/TaskForm";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { useSession } from "@/lib/hooks";
 import { useRouter } from "next/navigation";
 

@@ -1,0 +1,293 @@
+# Kubernetes Resource Definitions
+
+**Feature**: 006-k8s-deployment
+**Date**: 2025-01-27
+**Contract Type**: Kubernetes Resource Schemas
+
+## Frontend Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-list-frontend
+  labels:
+    app: frontend
+    version: v1.0.0
+
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}  # 1 (local), 2 (production)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero downtime
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: v1.0.0
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}  # Never (local), Always (prod)
+
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+
+        resources:
+          requests:
+            cpu: {{ .Values.frontend.resources.requests.cpu }}
+            memory: {{ .Values.frontend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.frontend.resources.limits.cpu }}
+            memory: {{ .Values.frontend.resources.limits.memory }}
+
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        startupProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12  # 60s total
+```
+
+## Backend Deployment
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-list-backend
+  labels:
+    app: backend
+    version: v1.0.0
+
+spec:
+  replicas: {{ .Values.backend.replicaCount }}  # 1 (local), 2 (production)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero downtime
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+        version: v1.0.0
+
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}  # Never (local), Always (prod)
+
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+
+        envFrom:
+        - configMapRef:
+            name: todo-list-backend-config
+        - secretRef:
+            name: todo-list-backend-secret
+
+        resources:
+          requests:
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+            memory: {{ .Values.backend.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+            memory: {{ .Values.backend.resources.limits.memory }}
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12  # 60s total
+```
+
+## Frontend Service
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+    protocol: TCP
+```
+
+## Backend Service
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  labels:
+    app: backend
+
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http
+    protocol: TCP
+```
+
+## Frontend ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-list-frontend-config
+
+data:
+  API_URL: "http://backend:8000"
+  APP_ENV: "{{ .Values.environment }}"
+  FEATURE_FLAGS: |
+    {
+      "enableChat": true,
+      "enableFilters": true,
+      "enablePriorities": true
+    }
+```
+
+## Backend ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-list-backend-config
+
+data:
+  DATABASE_HOST: "{{ .Values.database.host }}"
+  DATABASE_PORT: "{{ .Values.database.port }}"
+  DATABASE_NAME: "{{ .Values.database.name }}"
+  OPENAI_MODEL: "{{ .Values.openai.model }}"
+  LOG_LEVEL: "{{ .Values.logging.level }}"
+```
+
+## Backend Secret
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: todo-list-backend-secret
+
+type: Opaque
+
+stringData:  # Base64 encoding handled by Kubernetes
+  DATABASE_URL: "{{ .Values.database.url }}"
+  JWT_SECRET: "{{ .Values.auth.jwtSecret }}"
+  OPENAI_API_KEY: "{{ .Values.openai.apiKey }}"
+```
+
+## Helm Test
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-connection"
+  labels:
+    app: todo-list-test
+
+spec:
+  restartPolicy: Never
+
+  containers:
+  - name: test-frontend
+    image: curlimages/curl:latest
+    command:
+    - sh
+    - -c
+    - |
+      curl -f http://frontend/ || exit 1
+
+  - name: test-backend
+    image: curlimages/curl:latest
+    command:
+    - sh
+    - -c
+    - |
+      curl -f http://backend/health || exit 1
+```

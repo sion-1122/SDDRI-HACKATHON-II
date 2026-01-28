@@ -1,0 +1,36 @@
+replicaCount: 2
+
+image:
+  repository: change-me
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 3000
+
+component:
+  name: frontend
+  port: 3000
+
+probes:
+  liveness:
+    path: /
+    periodSeconds: 10
+  readiness:
+    path: /
+    periodSeconds: 5
+  startup:
+    path: /
+    failureThreshold: 30
+    periodSeconds: 5
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+env: []

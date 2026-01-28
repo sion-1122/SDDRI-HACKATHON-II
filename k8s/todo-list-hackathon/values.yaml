@@ -1,0 +1,107 @@
+# Default values for todo-list-hackathon
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: todo-list-frontend
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 3000
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Container security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 2
+  
+  image:
+    repository: todo-list-backend
+    tag: "v1.0.0"
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 8000
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  # Environment variables (use --set or secrets file for sensitive data)
+  env:
+    databaseUrl: "postgresql://user:password@host:5432/dbname"
+    jwtSecret: "change-me-in-production"
+    openaiApiKey: "sk-your-openai-key"
+    frontendUrl: "http://localhost:3000"
+  
+  # Container security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false  # Needs write access for SQLite in dev
+
+# Rolling update strategy
+strategy:
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+  type: RollingUpdate
+
+# Termination grace period
+terminationGracePeriodSeconds: 30
+
+# Liveness, readiness, and startup probes
+probes:
+  liveness:
+    path: /
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readiness:
+    path: /
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+
+  startup:
+    path: /
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 12
+
+# Service account
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
