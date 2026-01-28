@@ -1,0 +1,142 @@
+# Container Image Specifications
+
+**Feature**: 006-k8s-deployment
+**Date**: 2025-01-27
+**Contract Type**: Container Image Definitions
+
+## Frontend Image (todo-list-frontend)
+
+```yaml
+image:
+  name: todo-list-frontend
+  registry: local  # Loaded via minikube image load
+  tag: v1.0.0
+  base: nginx:alpine
+  port: 80
+
+build:
+  strategy: multi-stage
+  stage1:
+    name: build
+    base: node:20-alpine
+    purpose: Build Next.js static assets
+    commands:
+      - pnpm install --frozen-lockfile
+      - pnpm build
+  stage2:
+    name: serve
+    base: nginx:alpine
+    purpose: Serve static files via nginx
+    artifacts:
+      - source: stage1:/app/.next/static
+        destination: /usr/share/nginx/html/static
+      - source: stage1:/app/public
+        destination: /usr/share/nginx/html
+
+constraints:
+  maxSize: 200MB  # Compressed
+  startupTime: 10s
+  user: non-root  # nginx user
+  healthCheck:
+    path: /
+    port: 80
+    protocol: HTTP
+
+dockerfile: frontend/Dockerfile
+dockerignore: frontend/.dockerignore
+
+buildCommand: |
+  docker build -t todo-list-frontend:v1.0.0 ./frontend
+
+loadCommand: |
+  minikube image load todo-list-frontend:v1.0.0
+```
+
+## Backend Image (todo-list-backend)
+
+```yaml
+image:
+  name: todo-list-backend
+  registry: local  # Loaded via minikube image load
+  tag: v1.0.0
+  base: python:3.13-slim
+  port: 8000
+
+build:
+  strategy: multi-stage
+  stage1:
+    name: deps
+    base: python:3.13-slim
+    purpose: Install Python dependencies
+    commands:
+      - pip install uv
+      - uv sync --frozen
+    artifacts:
+      - source: .venv
+        destination: /app/.venv
+  stage2:
+    name: runtime
+    base: python:3.13-slim
+    purpose: Run FastAPI application
+    artifacts:
+      - source: stage1:/app/.venv
+        destination: /app/.venv
+      - source: .
+        destination: /app
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+constraints:
+  maxSize: 150MB  # Compressed
+  startupTime: 10s
+  user: non-root  # appuser:1000
+  healthCheck:
+    path: /health
+    port: 8000
+    protocol: HTTP
+  endpoints:
+    - /health  # Health check endpoint
+    - /metrics  # Metrics endpoint
+
+dockerfile: backend/Dockerfile
+dockerignore: backend/.dockerignore
+
+buildCommand: |
+  docker build -t todo-list-backend:v1.0.0 ./backend
+
+loadCommand: |
+  minikube image load todo-list-backend:v1.0.0
+```
+
+## Image Versioning
+
+```yaml
+versioning:
+  format: semver  # v{major}.{minor}.{patch}
+  strategy: git-tag  # Tag matches git tag
+  example: v1.0.0
+
+tagPolicy:
+  - Tags MUST be immutable
+  - Tags MUST match Chart.appVersion
+  - Tags MUST follow semantic versioning
+  - Tags MUST be updated on each release
+```
+
+## Image Scanning
+
+```yaml
+security:
+  scanTools:
+    - docker scan  # Built-in vulnerability scanner
+    - trivy  # Optional: Comprehensive scanner
+
+  baseImages:
+    - nginx:alpine  # Updated regularly
+    - python:3.13-slim  # Official Python image
+
+  bestPractices:
+    - Use non-root user
+    - Use minimal base images (alpine, slim)
+    - Scan for vulnerabilities before deployment
+    - Update base images monthly
+```

@@ -12,6 +12,8 @@ Auto-generated from all feature plans. Last updated: 2026-01-02
 - Python 3.13+ (backend), TypeScript 5+ (frontend chat UI) (004-ai-chatbot)
 - TypeScript 5+, React 19.2.3, Next.js 16.1.1 + shadcn/ui, nuqs, Sonner, Tailwind CSS 4 (005-ux-improvement)
 - Neon Serverless PostgreSQL (existing, no changes) (005-ux-improvement)
+- Python 3.13+ (backend), TypeScript 5+ (frontend) + Docker Desktop, Minikube, Helm 3+, kubectl-ai (optional), kagent (optional) (006-k8s-deployment)
+- Neon Serverless PostgreSQL (external, cloud-hosted) (006-k8s-deployment)
 
 - Python 3.13+ + TUI library (textual, rich, or prompt_toolkit - to be determined in research phase) (001-todo-cli-tui)
 
@@ -41,8 +43,8 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13+: Follow standard conventions
 
 ## Recent Changes
+- 006-k8s-deployment: Added Python 3.13+ (backend), TypeScript 5+ (frontend) + Docker Desktop, Minikube, Helm 3+, kubectl-ai (optional), kagent (optional)
 - 005-ux-improvement: Added TypeScript 5+, React 19.2.3, Next.js 16.1.1 + shadcn/ui, nuqs, Sonner, Tailwind CSS 4
-- 004-ai-chatbot: Added Python 3.13+ (backend), TypeScript 5+ (frontend chat UI)
 - 004-ai-chatbot: Added Python 3.13+ (backend), TypeScript 5+ (frontend chat UI)
 
 

@@ -1,0 +1,216 @@
+# Production values for todo-list-hackathon
+# Overrides for cloud Kubernetes deployments (AKS, GKE, EKS, OKE)
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 3  # Higher replica count for production
+
+  image:
+    repository: todo-list-frontend
+    tag: "v1.0.0"
+    pullPolicy: Always  # Always pull latest image in production
+
+  service:
+    type: ClusterIP  # Use Ingress for external access
+    port: 3000
+
+  resources:
+    requests:
+      cpu: 200m      # Higher CPU request for production
+      memory: 256Mi  # Higher memory request
+    limits:
+      cpu: 1000m     # Higher CPU limit
+      memory: 1Gi    # Higher memory limit
+
+  # Container security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true  # Read-only filesystem in production
+
+  # Pod security context
+  podSecurityContext:
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 3  # Higher replica count for production
+
+  image:
+    repository: todo-list-backend
+    tag: "v1.0.0"
+    pullPolicy: Always  # Always pull latest image in production
+
+  service:
+    type: ClusterIP  # Use Ingress for external access
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 200m      # Higher CPU request for production
+      memory: 256Mi  # Higher memory request
+    limits:
+      cpu: 1000m     # Higher CPU limit
+      memory: 1Gi    # Higher memory limit
+
+  # Environment variables - WARNING: Use Kubernetes Secrets for sensitive data
+  env:
+    # Database URL should come from Kubernetes Secret
+    databaseUrl: "postgresql://user:password@host:5432/dbname"
+    # JWT secret should come from Kubernetes Secret
+    jwtSecret: "change-me-in-production-use-k8s-secret"
+    # OpenAI API key should come from Kubernetes Secret
+    openaiApiKey: "sk-your-openai-key"
+    # Frontend URL for CORS
+    frontendUrl: "https://your-frontend-domain.com"
+
+  # Container security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: false  # Needs write access for SQLite logs (if using SQLite)
+
+  # Pod security context
+  podSecurityContext:
+    fsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+
+# Rolling update strategy - more conservative for production
+strategy:
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0  # Zero downtime deployment
+  type: RollingUpdate
+
+# Termination grace period
+terminationGracePeriodSeconds: 60  # Longer grace period for graceful shutdown
+
+# Liveness, readiness, and startup probes - production settings
+probes:
+  liveness:
+    path: /
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+    initialDelaySeconds: 30
+
+  readiness:
+    path: /
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 2
+    initialDelaySeconds: 10
+
+  startup:
+    path: /
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 18  # 90 seconds total for slower production startup
+    initialDelaySeconds: 0
+
+# Pod Disruption Budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  frontend:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  backend:
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+# Service account with RBAC
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/IAM_ROLE_NAME"  # For AWS EKS
+  name: ""
+
+# Ingress configuration (for cloud K8s with Ingress Controller)
+ingress:
+  enabled: true
+  className: "nginx"  # nginx, traefik, alb, etc.
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # For TLS certificates
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: todo-app.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: todo-app-tls
+      hosts:
+        - todo-app.example.com
+
+# Node selector for production workloads
+nodeSelector:
+  workload: production  # Ensure pods run on production nodes
+
+# Tolerations for dedicated nodes
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "production"
+    effect: "NoSchedule"
+
+# Affinity rules for pod distribution
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - frontend
+          topologyKey: kubernetes.io/hostname
+
+# Health check timeout settings
+healthCheck:
+  timeoutSeconds: 5
+  intervalSeconds: 10
+  failureThreshold: 3
+
+# Logging configuration
+logging:
+  level: "INFO"  # INFO, WARNING, ERROR for production
+  format: "json"  # Structured JSON logging
+
+# Monitoring and observability
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  prometheusRules:
+    enabled: true
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 7  # Keep 7 days of backups

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: CHANGE-ME
+description: A Helm chart for CHANGE-ME
+version: 1.0.0
+appVersion: "1.0"

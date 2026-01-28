@@ -21,7 +21,7 @@ import { taskApi } from "@/lib/task-api";
 import { TaskForm } from "./TaskForm";
 import { PriorityBadge } from "./PriorityBadge";
 import { DueDateBadge } from "./DueDateBadge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import {
   AlertDialog,
   AlertDialogAction,

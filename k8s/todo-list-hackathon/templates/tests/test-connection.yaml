@@ -1,0 +1,21 @@
+{{- if .Values.backend.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "todo-list-hackathon.fullname" . }}-test-connection"
+  labels:
+    app.kubernetes.io/name: {{ include "todo-list-hackathon.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+  - name: wget
+    image: busybox
+    command:
+    - wget
+    - -O-
+    - http://{{ include "todo-list-hackathon.fullname" . }}-backend:{{ .Values.backend.service.port }}/health
+  restartPolicy: Never
+{{- end }}

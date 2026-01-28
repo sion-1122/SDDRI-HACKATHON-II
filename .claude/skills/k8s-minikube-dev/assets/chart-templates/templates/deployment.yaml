@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-list-hackathon.fullname" . }}-{{ .Values.component.name }}
+  labels:
+    app: {{ .Values.component.name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.component.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.component.name }}
+    spec:
+      containers:
+      - name: {{ .Values.component.name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        ports:
+        - name: http
+          containerPort: {{ .Values.component.port }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.probes.liveness.path }}
+            port: http
+          periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.probes.readiness.path }}
+            port: http
+          periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.probes.startup.path }}
+            port: http
+          failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}

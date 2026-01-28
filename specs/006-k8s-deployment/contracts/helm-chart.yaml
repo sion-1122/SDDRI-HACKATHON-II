@@ -1,0 +1,378 @@
+# Helm Chart Structure and Values
+
+**Feature**: 006-k8s-deployment
+**Date**: 2025-01-27
+**Contract Type**: Helm Chart Configuration
+
+## Chart Metadata (Chart.yaml)
+
+```yaml
+apiVersion: v2
+name: todo-list-hackathon
+description: A Helm chart for Todo List Hackathon application
+type: application
+
+# Chart version (semver)
+version: 1.0.0
+
+# Application version (must match Docker image tags)
+appVersion: "1.0.0"
+
+keywords:
+  - todo
+  - chatbot
+  - fastapi
+  - nextjs
+
+maintainers:
+  - name: GrowWidTalha
+    email: noreply@github.com
+```
+
+## Default Values (values.yaml)
+
+```yaml
+# Global settings
+global:
+  environment: development
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: todo-list-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Environment variables from ConfigMap
+  config:
+    apiUrl: http://backend:8000
+    appEnv: development
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: todo-list-backend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Environment variables from ConfigMap
+  config:
+    database:
+      host: your-neon-host.us-east-0.aws.neon.tech
+      port: "5432"
+      name: tododb
+
+    openai:
+      model: gpt-4
+
+    logging:
+      level: INFO
+
+  # Sensitive environment variables from Secret
+  secret:
+    # Set these via helm install --set or command line
+    databaseUrl: "postgresql://user:pass@host:5432/db"
+    jwtSecret: "change-me-in-production"
+    openaiApiKey: "sk-..."
+
+# Ingress configuration (Phase V)
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: todo-list.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Autoscaling (Phase V)
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+```
+
+## Local Values (values-local.yaml)
+
+```yaml
+# Override defaults for Minikube local development
+
+global:
+  environment: local
+
+frontend:
+  replicaCount: 1  # Single replica for local dev
+
+  image:
+    pullPolicy: Never  # Use locally loaded images
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+backend:
+  replicaCount: 1  # Single replica for local dev
+
+  image:
+    pullPolicy: Never  # Use locally loaded images
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  config:
+    logging:
+      level: DEBUG  # Verbose logging for local dev
+```
+
+## Production Values (values-production.yaml)
+
+```yaml
+# Override defaults for production deployment
+
+global:
+  environment: production
+
+frontend:
+  replicaCount: 3  # Multiple replicas for HA
+
+  image:
+    pullPolicy: Always  # Always pull latest image
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+backend:
+  replicaCount: 3  # Multiple replicas for HA
+
+  image:
+    pullPolicy: Always  # Always pull latest image
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  config:
+    logging:
+      level: WARNING  # Less verbose in production
+
+ingress:
+  enabled: true  # Enable Ingress for external access
+
+autoscaling:
+  enabled: true  # Enable HPA for auto-scaling
+  minReplicas: 3
+  maxReplicas: 10
+```
+
+## Helm Value Schema
+
+### Image Configuration
+
+```yaml
+image:
+  repository: string  # Image name (without registry/tag)
+  tag: string        # Semantic version (e.g., "1.0.0")
+  pullPolicy: string # One of: Always, IfNotPresent, Never
+```
+
+### Resource Configuration
+
+```yaml
+resources:
+  requests:
+    cpu: string     # Kubernetes CPU format (e.g., "100m", "1")
+    memory: string  # Kubernetes memory format (e.g., "128Mi", "1Gi")
+  limits:
+    cpu: string     # Kubernetes CPU format
+    memory: string  # Kubernetes memory format
+```
+
+### Service Configuration
+
+```yaml
+service:
+  type: string      # One of: ClusterIP, NodePort, LoadBalancer
+  port: number      # Service port
+  targetPort: number # Container port (optional, defaults to port)
+```
+
+## Helm Operations
+
+### Install
+
+```bash
+# Install with local values
+helm install todo-list ./k8s/todo-list-hackathon -f values-local.yaml
+
+# Install with production values
+helm install todo-list ./k8s/todo-list-hackathon -f values-production.yaml
+
+# Install with custom values
+helm install todo-list ./k8s/todo-list-hackathon \
+  --set backend.secret.openaiApiKey=sk-... \
+  --set backend.secret.databaseUrl=postgresql://...
+```
+
+### Upgrade
+
+```bash
+# Upgrade with local values
+helm upgrade todo-list ./k8s/todo-list-hackathon -f values-local.yaml
+
+# Upgrade with new image tag
+helm upgrade todo-list ./k8s/todo-list-hackathon \
+  --set frontend.image.tag=1.1.0 \
+  --set backend.image.tag=1.1.0
+
+# Upgrade with production values
+helm upgrade todo-list ./k8s/todo-list-hackathon -f values-production.yaml
+```
+
+### Rollback
+
+```bash
+# List releases
+helm history todo-list
+
+# Rollback to previous release
+helm rollback todo-list
+
+# Rollback to specific revision
+helm rollback todo-list 2
+```
+
+### Test
+
+```bash
+# Run Helm tests
+helm test todo-list
+
+# Test with verbose output
+helm test todo-list --logs
+```
+
+### Uninstall
+
+```bash
+# Uninstall release
+helm uninstall todo-list
+
+# Uninstall and remove PVCs
+helm uninstall todo-list --keep-history false
+```
+
+## Helm Template Functions
+
+### Conditional Rendering
+
+```yaml
+# Enable/disable components
+{{- if .Values.frontend.enabled }}
+# Frontend resources here
+{{- end }}
+
+# Conditional values
+{{- if eq .Values.global.environment "production" }}
+replicas: {{ .Values.frontend.replicaCount }}
+{{- else }}
+replicas: 1
+{{- end }}
+```
+
+### Loops
+
+```yaml
+# Generate multiple env vars
+env:
+{{- range $key, $value := .Values.backend.config }}
+- name: {{ $key }}
+  value: {{ $value | quote }}
+{{- end }}
+```
+
+### Default Values
+
+```yaml
+# Use default value if not set
+replicaCount: {{ .Values.replicaCount | default 2 }}
+
+# Nested defaults
+{{ .Values.some.nested.value | default "fallback" }}
+```
+
+### String Manipulation
+
+```yaml
+# Template strings
+name: {{ .Release.Name }}-backend
+
+# ToYaml (inject complex config)
+{{ toYaml .Values.backend.config | indent 2 }}
+```
+
+## Helm Hooks
+
+```yaml
+# Pre-install hook (runs before install)
+annotations:
+  "helm.sh/hook": pre-install
+  "helm.sh/hook-weight": "-5"
+  "helm.sh/hook-delete-policy": before-hook-creation
+
+# Post-install hook (runs after install)
+annotations:
+  "helm.sh/hook": post-install
+  "helm.sh/hook-weight": "5"
+  "helm.sh/hook-delete-policy": hook-succeeded
+```

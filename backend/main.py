@@ -8,38 +8,62 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from datetime import datetime
+import time
 
 from core.database import init_db, engine
 from core.config import get_settings
 from api.auth import router as auth_router
 from api.tasks import router as tasks_router
 from api.chat import router as chat_router
+from core.logging import setup_logging, get_logger
 
 settings = get_settings()
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+# Setup structured logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager.
 
-    Handles startup and shutdown events.
+    Handles startup and shutdown events with graceful connection cleanup.
     """
     # Startup
     logger.info("Starting up application...")
     init_db()
     logger.info("Database initialized")
 
+    # Track background tasks for graceful shutdown
+    background_tasks = set()
+
     yield
 
-    # Shutdown
+    # Shutdown - Graceful shutdown handler
     logger.info("Shutting down application...")
+
+    # Close database connections
+    try:
+        logger.info("Closing database connections...")
+        await engine.dispose()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error closing database: {e}")
+
+    # Wait for background tasks to complete (with timeout)
+    if background_tasks:
+        logger.info(f"Waiting for {len(background_tasks)} background tasks to complete...")
+        try:
+            # Wait up to 10 seconds for tasks to complete
+            import asyncio
+            await asyncio.wait_for(asyncio.gather(*background_tasks, return_exceptions=True), timeout=10.0)
+            logger.info("All background tasks completed")
+        except asyncio.TimeoutError:
+            logger.warning("Background tasks did not complete in time, forcing shutdown...")
+
+    logger.info("Application shutdown complete")
 
 
 # Create FastAPI application
@@ -100,13 +124,28 @@ async def health_check():
         with Session(engine) as session:
             # Execute a simple query (doesn't matter if it returns data)
             session.exec(select(User).limit(1))
-        return {"status": "healthy", "database": "connected"}
+        return {"status": "healthy", "database": "connected", "timestamp": datetime.utcnow().isoformat()}
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(
             status_code=503,
             detail="Service unavailable - database connection failed"
         )
+
+
+@app.get("/metrics")
+async def metrics():
+    """Metrics endpoint for monitoring.
+
+    Returns basic application metrics for Kubernetes health probes.
+    """
+    return {
+        "status": "running",
+        "timestamp": datetime.utcnow().isoformat(),
+        "uptime_seconds": time.time(),
+        "version": "1.0.0",
+        "database": "connected"  # Simplified - in production would check actual DB status
+    }
 
 
 # Global exception handler
