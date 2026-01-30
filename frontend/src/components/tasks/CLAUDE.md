@@ -7,10 +7,15 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #228 | 3:20 PM | 🟣 | TaskItem component enhanced with optimistic updates pattern | ~371 |
 | #214 | 3:08 PM | 🔴 | Fixed Button variant from danger to destructive | ~194 |
 | #208 | 3:07 PM | 🔵 | TaskForm component uses custom UI components with label props | ~266 |
-| #207 | " | 🔵 | TaskForm component examined for optimistic update pattern | ~256 |
 | #206 | " | 🟣 | TaskForm now supports due_date and priority fields | ~223 |
 | #187 | 2:53 PM | 🟣 | TaskSkeleton component created for loading states | ~281 |
+
+### Jan 29, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #903 | 8:02 PM | 🔵 | TaskListClient API parameters use lowercase priority values | ~165 |
+| #854 | 6:58 PM | 🔴 | Identified incorrect AlertDialog import path in TaskItem component | ~242 |
 </claude-mem-context>

@@ -32,7 +32,10 @@ const priorityConfig = {
 };
 
 export function PriorityBadge({ priority, className }: PriorityBadgeProps) {
-  const config = priorityConfig[priority];
+  const config = priorityConfig[priority] || {
+    label: priority || 'Unknown',
+    className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700',
+  };
 
   return (
     <span

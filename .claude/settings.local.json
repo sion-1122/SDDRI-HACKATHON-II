@@ -56,7 +56,15 @@
       "Bash(uv pip install:*)",
       "Bash(timeout:*)",
       "Skill(sp.git.commit_pr)",
-      "Bash(CI=true pnpm install:*)"
+      "Bash(CI=true pnpm install:*)",
+      "Bash(bash:*)",
+      "Bash(docker build:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(minikube status:*)",
+      "Bash(grep:*)",
+      "Bash(pnpm tsc:*)",
+      "Bash(source:*)",
+      "Bash(python:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1,18 +1,26 @@
 """MCP tool for adding tasks to the todo list.
 
-[Task]: T013
-[From]: specs/004-ai-chatbot/tasks.md
+[Task]: T013, T031
+[From]: specs/004-ai-chatbot/tasks.md, specs/007-intermediate-todo-features/tasks.md (US2)
 
 This tool allows the AI agent to create tasks on behalf of users
 through natural language conversations.
+
+Now supports tag extraction from natural language patterns.
 """
-from typing import Optional, Any
+from typing import Optional, Any, List
 from uuid import UUID, uuid4
 from datetime import datetime, timedelta
 
 from models.task import Task
 from core.database import engine
 from sqlmodel import Session
+
+# Import tag extraction service [T029, T031]
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from services.nlp_service import extract_tags_from_task_data, normalize_tag_name
 
 
 # Tool metadata for MCP registration
@@ -28,6 +36,13 @@ Parameters:
 - description (optional): Detailed task description (max 2000 characters)
 - due_date (optional): When the task is due (ISO 8601 date string or relative like 'tomorrow', 'next week')
 - priority (optional): Task priority - 'low', 'medium', or 'high' (default: 'medium')
+- tags (optional): List of tag names for categorization (e.g., ["work", "urgent"])
+
+Natural Language Tag Support [T031]:
+- "tagged with X" or "tags X" → extracts tag X
+- "add tag X" or "with tag X" → extracts tag X
+- "#tagname" → extracts hashtag as tag
+- "labeled X" → extracts tag X
 
 Returns: Created task details including ID, title, and confirmation.
 """,
@@ -56,6 +71,11 @@ Returns: Created task details including ID, title, and confirmation.
                 "type": "string",
                 "enum": ["low", "medium", "high"],
                 "description": "Task priority level"
+            },
+            "tags": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "List of tag names for categorization"
             }
         },
         "required": ["user_id", "title"]
@@ -68,11 +88,13 @@ async def add_task(
     title: str,
     description: Optional[str] = None,
     due_date: Optional[str] = None,
-    priority: Optional[str] = None
+    priority: Optional[str] = None,
+    tags: Optional[List[str]] = None
 ) -> dict[str, Any]:
     """Create a new task for the user.
 
     [From]: specs/004-ai-chatbot/spec.md - US1
+    [Task]: T031 - Integrate tag extraction for natural language
 
     Args:
         user_id: User ID (UUID string) who owns this task
@@ -80,6 +102,7 @@ async def add_task(
         description: Optional detailed description
         due_date: Optional due date (ISO 8601 or relative)
         priority: Optional priority level (low/medium/high)
+        tags: Optional list of tag names
 
     Returns:
         Dictionary with created task details
@@ -102,6 +125,21 @@ async def add_task(
     # Normalize priority
     normalized_priority = _normalize_priority(priority)
 
+    # [T031] Extract tags from natural language in title and description
+    extracted_tags = extract_tags_from_task_data(validated_title, validated_description)
+
+    # Normalize extracted tags
+    normalized_extracted_tags = [normalize_tag_name(tag) for tag in extracted_tags]
+
+    # Combine provided tags with extracted tags, removing duplicates
+    all_tags = set(normalized_extracted_tags)
+    if tags:
+        # Normalize provided tags
+        normalized_provided_tags = [normalize_tag_name(tag) for tag in tags]
+        all_tags.update(normalized_provided_tags)
+
+    final_tags = sorted(list(all_tags)) if all_tags else []
+
     # Get database session (synchronous)
     with Session(engine) as db:
         try:
@@ -113,6 +151,7 @@ async def add_task(
                 description=validated_description,
                 due_date=parsed_due_date,
                 priority=normalized_priority,
+                tags=final_tags,
                 completed=False,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow()
@@ -132,10 +171,11 @@ async def add_task(
                     "description": task.description,
                     "due_date": task.due_date.isoformat() if task.due_date else None,
                     "priority": task.priority,
+                    "tags": task.tags,
                     "completed": task.completed,
                     "created_at": task.created_at.isoformat()
                 },
-                "message": f"✅ Task created: {task.title}"
+                "message": f"✅ Task created: {task.title}" + (f" (tags: {', '.join(final_tags)})" if final_tags else "")
             }
 
         except Exception as e:
@@ -205,6 +245,7 @@ def _normalize_priority(priority: Optional[str]) -> str:
     """Normalize priority string to valid values.
 
     [From]: models/task.py - Task model
+    [Task]: T009-T011 - Priority extraction from natural language
 
     Args:
         priority: Priority string to normalize
@@ -220,22 +261,46 @@ def _normalize_priority(priority: Optional[str]) -> str:
 
     priority_normalized = priority.lower().strip()
 
+    # Direct matches
     if priority_normalized in ["low", "medium", "high"]:
         return priority_normalized
 
-    # Map common alternatives
-    priority_map = {
-        "1": "low",
-        "2": "medium",
-        "3": "high",
-        "urgent": "high",
-        "important": "high",
-        "normal": "medium",
-        "routine": "low"
+    # Enhanced priority mapping from natural language patterns
+    # [Task]: T011 - Integrate priority extraction in MCP tools
+    priority_map_high = {
+        # Explicit high priority keywords
+        "urgent", "asap", "important", "critical", "emergency", "immediate",
+        "high", "priority", "top", "now", "today", "deadline", "crucial",
+        # Numeric mappings
+        "3", "high priority", "very important", "must do"
     }
 
-    normalized = priority_map.get(priority_normalized, "medium")
-    return normalized
+    priority_map_low = {
+        # Explicit low priority keywords
+        "low", "later", "whenever", "optional", "nice to have", "someday",
+        "eventually", "routine", "normal", "regular", "backlog",
+        # Numeric mappings
+        "1", "low priority", "no rush", "can wait"
+    }
+
+    priority_map_medium = {
+        "2", "medium", "normal", "standard", "default", "moderate"
+    }
+
+    # Check high priority patterns
+    if priority_normalized in priority_map_high or any(
+        keyword in priority_normalized for keyword in ["urgent", "asap", "critical", "deadline", "today"]
+    ):
+        return "high"
+
+    # Check low priority patterns
+    if priority_normalized in priority_map_low or any(
+        keyword in priority_normalized for keyword in ["whenever", "later", "optional", "someday"]
+    ):
+        return "low"
+
+    # Default to medium
+    return "medium"
 
 
 # Register tool with MCP server

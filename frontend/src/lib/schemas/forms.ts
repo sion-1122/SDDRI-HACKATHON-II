@@ -1,11 +1,11 @@
 /* Form Zod validation schemas.
 
-[Task]: T016
-[From]: specs/003-frontend-task-manager/data-model.md
+[Task]: T016, T038
+[From]: specs/003-frontend-task-manager/data-model.md, specs/007-intermediate-todo-features/tasks.md
 */
 import { z } from 'zod';
 
-// Task Form Schema
+// Task Form Schema [T038] - extended with priority, due_date, tags
 export const taskFormSchema = z.object({
   title: z.string()
     .min(1, 'Title is required')
@@ -13,6 +13,11 @@ export const taskFormSchema = z.object({
   description: z.string()
     .max(2000, 'Description must be less than 2000 characters')
     .optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH'], {
+    message: 'Priority must be LOW, MEDIUM, or HIGH',
+  }),
+  due_date: z.string().nullable().optional(),
+  tags: z.array(z.string().max(50, 'Tag name must be less than 50 characters')).optional(),
 });
 
 export type TaskFormData = z.infer<typeof taskFormSchema>;

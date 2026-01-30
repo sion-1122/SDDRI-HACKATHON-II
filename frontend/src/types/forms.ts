@@ -12,6 +12,7 @@ export interface TaskFormData {
   description: string;
   due_date: string | null;
   priority: TaskPriority;
+  tags: string[];  // [T035] Array of tag names
 }
 
 export interface TaskFormErrors {
