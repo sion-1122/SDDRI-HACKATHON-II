@@ -61,11 +61,12 @@ export function FloatingChat() {
             <Sheet open={isOpen} onOpenChange={(open) => !open && closeChat()}>
                 <SheetContent
                     side="right"
-                    // ensure the sheet has predictable width across sizes:
-                    // - mobile: full width (w-screen)
-                    // - >=640px: fixed comfortable width (sm:w-[420px])
-                    // also allow max width to avoid overflow
-                    className="w-screen sm:w-[420px] max-w-full p-0"
+                    // Progressive responsive width across screen sizes:
+                    // - mobile: nearly full width (100vw)
+                    // - sm (640px): comfortable width (500px)
+                    // - md (768px): expanded width (600px)
+                    // - lg (1024px): generous width (700px)
+                    className="max-w-[100vw] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[700px] p-0"
                     showCloseButton={false}
                 >
                     <div className="flex flex-col h-full overflow-hidden">

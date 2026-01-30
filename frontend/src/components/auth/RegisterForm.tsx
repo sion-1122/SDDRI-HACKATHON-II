@@ -108,7 +108,8 @@ export function RegisterForm() {
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <div className="bg-card border border-border rounded-xl p-6 sm:p-8">
+      <form className="space-y-4" onSubmit={handleSubmit}>
       {/* Notion-inspired form fields - clean and minimal */}
       <div className="space-y-3">
         <div>
@@ -199,5 +200,6 @@ export function RegisterForm() {
         {isLoading ? "Creating account..." : success ? "Account created!" : "Create Account"}
       </button>
     </form>
+    </div>
   );
 }
