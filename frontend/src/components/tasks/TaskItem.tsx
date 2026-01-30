@@ -20,6 +20,7 @@ import { formatRelativeDate } from "@/lib/utils";
 import { taskApi } from "@/lib/task-api";
 import { TaskForm } from "./TaskForm";
 import { PriorityBadge } from "./PriorityBadge";
+import { TagBadgeGroup } from "./TagBadge";
 import { DueDateBadge } from "./DueDateBadge";
 import { Button } from "@/components/ui/Button";
 import {
@@ -31,7 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/alert-dialog";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { useOptimisticAction } from "@/lib/hooks";
@@ -174,6 +175,7 @@ export function TaskItem({ task, onDelete }: TaskItemProps) {
             {/* Meta info: badges and date - subtle row */}
             <div className="flex flex-wrap items-center gap-2 mt-3">
               <PriorityBadge priority={localTask.priority} />
+              <TagBadgeGroup tags={localTask.tags || []} />
               <DueDateBadge
                 dueDate={localTask.due_date}
                 urgency={localTask.urgency}
@@ -184,8 +186,8 @@ export function TaskItem({ task, onDelete }: TaskItemProps) {
             </div>
           </div>
 
-          {/* Action buttons - minimalistic icon-only on hover */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {/* Action buttons - always visible on mobile, hover on desktop */}
+          <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={() => setShowEditModal(true)}
               className="p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"

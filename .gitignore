@@ -78,3 +78,31 @@ kubeconfig*
 
 # Helm
 charts/*.tgz
+
+# Node.js / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+lerna-debug.log*
+dist/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+.parcel-cache/
+.turbo/
+.vercel/
+.netlify/
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettiercache
+
+# Docker
+*.dockerfile
+docker-compose.override.yml

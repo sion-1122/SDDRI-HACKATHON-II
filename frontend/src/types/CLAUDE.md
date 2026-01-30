@@ -7,9 +7,5 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #223 | 3:15 PM | 🟣 | Implemented nuqs filter parsers for type-safe URL state management | ~328 |
-| #221 | 3:14 PM | 🔵 | Filter type definitions examined | ~300 |
-| #204 | 3:01 PM | 🔄 | Fixed TaskFormData import/export in task types | ~186 |
-| #198 | 3:00 PM | 🔵 | TypeScript compiler errors identified in frontend codebase | ~288 |
-| #179 | 2:49 PM | 🟣 | Enhanced filter types with priority, due date, and pagination | ~288 |
+| #201 | 3:00 PM | 🔵 | Task type definitions include computed urgency property for UI display | ~342 |
 </claude-mem-context>

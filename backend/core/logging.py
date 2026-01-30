@@ -1,107 +1,120 @@
-"""Structured JSON logging configuration.
+"""Clean logging configuration for development.
 
-Provides structured logging with JSON format, correlation IDs, and log levels
-for cloud-native deployment and aggregation.
-
-[Task]: T012 - Phase IV Kubernetes deployment
-[From]: specs/006-k8s-deployment/plan.md
+Provides simple, readable logs for development with optional JSON mode for production.
 """
 import logging
 import logging.config
-import json
 import sys
-from datetime import datetime
-import traceback
-from typing import Any, Dict
-from contextvars import ContextVar
-
-# Context variable for correlation ID (e.g., request ID)
-CORRELATION_ID: ContextVar[str] = ContextVar("correlation_id", default="")
+from typing import Optional
 
 
-class JSONFormatter(logging.Formatter):
-    """Structured JSON formatter for cloud-native logging.
+class CleanFormatter(logging.Formatter):
+    """Simple, clean formatter for readable development logs."""
 
-    Formats log records as JSON with timestamp, level, correlation ID, and message.
-    Compatible with log aggregators like Elasticsearch, Splunk, and Cloud Logging.
-    """
+    # Color codes for terminal output
+    COLORS = {
+        "DEBUG": "\033[36m",      # Cyan
+        "INFO": "\033[32m",       # Green
+        "WARNING": "\033[33m",    # Yellow
+        "ERROR": "\033[31m",      # Red
+        "CRITICAL": "\033[35m",   # Magenta
+        "RESET": "\033[0m",       # Reset
+    }
+
+    def __init__(self, use_colors: bool = True):
+        """Initialize formatter.
+
+        Args:
+            use_colors: Whether to use ANSI color codes (disable for file logs)
+        """
+        self.use_colors = use_colors
+        super().__init__()
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON string."""
-        # Create base log entry
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-            "module": record.module,
-            "function": record.funcName,
-            "line": record.lineno,
-        }
+        """Format log record as a clean, readable string."""
+        level = record.levelname
+        module = record.name.split(".")[-1] if "." in record.name else record.name
+        message = record.getMessage()
 
-        # Add correlation ID if available
-        correlation_id = CORRELATION_ID.get()
-        if correlation_id:
-            log_entry["correlation_id"] = correlation_id
+        # Build the log line
+        if self.use_colors:
+            color = self.COLORS.get(level, "")
+            reset = self.COLORS["RESET"]
+            formatted = f"{color}{level:8}{reset} {module:20} | {message}"
+        else:
+            formatted = f"{level:8} {module:20} | {message}"
 
         # Add exception info if present
         if record.exc_info:
-            log_entry["exception"] = {
-                "type": record.exc_info[0].__name__ if record.exc_info[0] else None,
-                "message": str(record.exc_info[1]) if record.exc_info[1] else None,
-                "traceback": traceback.format_exception(*record.exc_info)
-            }
+            formatted += f"\n{self.formatException(record.exc_info)}"
 
-        # Add process info (useful for container logging)
-        log_entry["process"] = {
-            "pid": record.process,
-            "name": record.processName,
-        }
-
-        # Add extra fields from record
-        if hasattr(record, "extra_fields"):
-            log_entry.update(record.extra_fields)
-
-        return json.dumps(log_entry)
+        return formatted
 
 
-def setup_logging(level: str = "INFO") -> None:
-    """Configure structured JSON logging for the application.
+def setup_logging(
+    level: str = "INFO",
+    json_mode: bool = False,
+    quiet_sql: bool = True
+) -> None:
+    """Configure logging for the application.
 
     Args:
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        json_mode: Use structured JSON logging (for production)
+        quiet_sql: Suppress verbose SQL query logs
     """
     log_level = getattr(logging, level.upper(), logging.INFO)
 
-    # Configure root logger with JSON handler
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JSONFormatter())
-    handler.setLevel(log_level)
-
-    # Root logger configuration
+    # Configure root logger
     logging.root.setLevel(log_level)
     logging.root.handlers.clear()
+
+    # Create handler
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(log_level)
+
+    # Set formatter
+    if json_mode:
+        # Import JSON formatter for production
+        import json
+        from datetime import datetime
+
+        class JSONFormatter(logging.Formatter):
+            def format(self, record):
+                log_entry = {
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "level": record.levelname,
+                    "logger": record.name,
+                    "message": record.getMessage(),
+                }
+                if record.exc_info:
+                    log_entry["exception"] = self.formatException(record.exc_info)
+                return json.dumps(log_entry)
+
+        handler.setFormatter(JSONFormatter())
+    else:
+        handler.setFormatter(CleanFormatter(use_colors=True))
+
     logging.root.addHandler(handler)
 
-    # Configure uvicorn logging
-    logging.getLogger("uvicorn").setLevel(logging.INFO)
+    # Configure third-party loggers
+    if quiet_sql:
+        logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+        logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+        logging.getLogger("sqlmodel").setLevel(logging.WARNING)
+
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("uvicorn.error").setLevel(logging.ERROR)
-
-    # Configure SQLModel logging
-    logging.getLogger("sqlmodel").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-
-    # Configure FastAPI logging
     logging.getLogger("fastapi").setLevel(logging.INFO)
 
-    # Log startup
-    logger = logging.getLogger(__name__)
-    logger.info(f"Structured logging configured at {level} level")
+    # Log startup message (but only in non-JSON mode)
+    if not json_mode:
+        logger = logging.getLogger(__name__)
+        logger.info(f"Logging configured at {level} level")
 
 
 def get_logger(name: str) -> logging.Logger:
-    """Get a logger instance with the configured JSON formatter.
+    """Get a logger instance.
 
     Args:
         name: Logger name (typically __name__ of the module)
@@ -110,24 +123,3 @@ def get_logger(name: str) -> logging.Logger:
         Logger instance
     """
     return logging.getLogger(name)
-
-
-def with_correlation_id(correlation_id: str) -> Dict[str, Any]:
-    """Create a context dict with correlation ID for logging.
-
-    Usage:
-        logger.info("Processing request", extra={"extra_fields": with_correlation_id(request_id)})
-
-    Args:
-        correlation_id: Correlation ID (e.g., request ID, session ID)
-
-    Returns:
-        Dict with extra_fields for logging
-    """
-    token = CORRELATION_ID.set(correlation_id)
-    return {"extra_fields": {"correlation_id": correlation_id}}
-
-
-def clear_correlation_id() -> None:
-    """Clear the correlation ID context."""
-    CORRELATION_ID.set("")

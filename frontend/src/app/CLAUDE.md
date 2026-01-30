@@ -25,4 +25,11 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #285 | 11:10 AM | 🔵 | Global CSS theme system examined in todo-list-hackathon frontend | ~240 |
+
+### Jan 28, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #683 | 10:59 PM | 🔵 | Priority Colors Defined in Global CSS with OKLCH Color Space | ~326 |
+| #682 | " | 🔵 | Global CSS Defines Priority and Urgency Color Variables for Notion-Inspired Theming | ~407 |
 </claude-mem-context>

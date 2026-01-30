@@ -138,4 +138,16 @@ DATABASE_URL=postgresql://user:password@host/database
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #58 | 3:17 PM | ✅ | Installed httpx-ws package for WebSocket testing support | ~187 |
+
+### Jan 28, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #587 | 8:43 PM | 🔵 | Backend pyproject.toml Defines All Python Dependencies | ~191 |
+
+### Jan 30, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #920 | 12:06 PM | 🔵 | Reviewed main.py to update logging configuration call | ~200 |
 </claude-mem-context>

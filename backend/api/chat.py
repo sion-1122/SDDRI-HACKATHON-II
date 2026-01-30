@@ -284,13 +284,19 @@ async def chat(
         "created_at": datetime.utcnow()
     }
 
+    # Add current user message to conversation history for AI processing
+    # This is critical - the agent needs the user's current message in context
+    messages_for_agent = conversation_history + [
+        {"role": "user", "content": sanitized_message}
+    ]
+
     # Run AI agent with streaming (broadcasts WebSocket events)
     # [From]: T014 - Initialize OpenAI Agents SDK with Gemini
     # [From]: T072 - Use streaming agent for real-time progress
     # [From]: T060 - Add comprehensive error messages for edge cases
     try:
         ai_response_text = await run_agent_with_streaming(
-            messages=conversation_history,
+            messages=messages_for_agent,
             user_id=user_id
         )
     except ValueError as e:
