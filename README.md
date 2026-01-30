@@ -1,238 +1,291 @@
-# Todo CLI TUI
+# Todo List Hackathon Project
 
-A modern, keyboard-driven Terminal User Interface (TUI) for managing todo tasks. Built with Python and the Textual framework.
+A modern full-stack task management application with AI chatbot integration, advanced features, and cloud-native architecture.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Python](https://img.shields.io/badge/python-3.13+-green)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Status](https://img.shields.io/badge/status-In_Progress-yellow)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
-## Features
+## Project Overview
 
-### Core Functionality (User Stories 1, 2, & 3)
+This is a hackathon project demonstrating modern full-stack development practices including:
+- **Frontend**: Next.js 16 with React 19, TypeScript, Tailwind CSS 4, shadcn/ui
+- **Backend**: FastAPI (Python) with PostgreSQL, AI chatbot integration
+- **Infrastructure**: Kubernetes deployment with Minikube and Helm
+- **Architecture**: Event-driven with Kafka and Dapr integration
 
-- ✅ **Add Tasks** - Create new tasks with descriptions
-- ✅ **List Tasks** - View all tasks with completion status
-- ✅ **Edit Tasks** - Modify existing task descriptions
-- ✅ **Delete Tasks** - Remove tasks from your list
-- ✅ **Toggle Completion** - Mark tasks as complete/incomplete with Space key
-- ✅ **Keyboard Navigation** - Full keyboard support, no mouse required
-- ✅ **Input Validation** - Prevents empty task descriptions
-- ✅ **Empty List Handling** - Graceful handling when no tasks exist
+## Current Status
 
-## Installation
+### Completed Phases
 
-### Prerequisites
+| Phase | Status | Description |
+|-------|--------|-------------|
+| Phase 1 | ✅ Complete | CLI TUI application (Python + Textual) |
+| Phase 2 | ✅ Complete | MCP Server for prompts |
+| Phase 3 | ✅ Complete | Frontend Task Manager (Next.js + shadcn/ui) |
+| Phase 4 | ✅ Complete | AI Chatbot Integration (Natural Language) |
+| Phase 5 | ✅ Complete | UX Improvements (Toast notifications, URL state) |
+| Phase 6 | ✅ Complete | Intermediate Todo Features (Priority, Tags, Filters, Sort, Search) |
+| Phase 7 | ✅ Complete | Kubernetes Deployment (Minikube + Helm) |
 
-- Python 3.13 or higher
-- [UV](https://github.com/astral-sh/uv) package manager
+### Phase 8: Advanced Features (In Progress)
 
-### Setup
+**Branch**: `008-advanced-features`
 
-1. Clone the repository:
+#### Completed
+- ✅ Specification created
+
+#### Pending
+- ⏳ Due Dates with DateTime Picker (shadcn DatePicker)
+- ⏳ Browser Notifications for Reminders
+- ⏳ Recurring Tasks (daily/weekly/monthly)
+- ⏳ Overdue task highlighting
+- ⏳ Notification preferences UI
+
+### Phase 9: Kafka Event Streaming (Spec Created)
+
+**Branch**: `009-kafka-events`
+
+#### Completed
+- ✅ Specification created
+- ✅ Minikube cluster started
+- ✅ cert-manager installed for TLS
+
+#### Pending
+- ⏳ Redpanda Kafka deployment (failed - needs retry with adjusted resources)
+- ⏳ Kafka topics creation (task-events, reminders, task-updates)
+- ⏳ Event publishing from Chat API
+- ⏳ Event consumers for reminders
+- ⏳ Event schemas definition
+
+### Phase 10: Dapr Integration (Spec Created)
+
+**Branch**: `010-dapr-integration`
+
+#### Completed
+- ✅ Specification created
+
+#### Pending
+- ⏳ Dapr sidecar deployment
+- ⏳ Pub/Sub over Kafka configuration
+- ⏳ State management for conversations (Redis)
+- ⏳ Cron bindings for reminders
+- ⏳ Secrets management
+
+### Phase 11: Cloud K8s Deployment (Spec Created)
+
+**Branch**: `011-cloud-k8s-deployment`
+
+#### Completed
+- ✅ Specification created
+
+#### Pending
+- ⏳ Cloud cluster provisioning (AKS/GKE/OKE)
+- ⏳ Container registry setup
+- ⏳ Cloud Kafka deployment
+- ⏳ CI/CD pipeline (GitHub Actions)
+- ⏳ Monitoring & logging (Prometheus, Grafana, Loki)
+
+## Quick Start
+
+### Frontend Development
+
 ```bash
-git clone https://github.com/GrowWidTalha/SDDRI-Hackathon-2.git
-cd SDDRI-Hackathon-2
+cd frontend
+pnpm install
+pnpm dev
 ```
 
-2. Install dependencies:
+Frontend runs on http://localhost:3000
+
+### Backend Development
+
 ```bash
+cd backend
 uv sync
+uv run uvicorn api.main:app --reload
 ```
 
-## Running the Application
+Backend runs on http://localhost:8000
 
-Start the Todo CLI application:
+### Kubernetes Deployment (Local)
 
 ```bash
-uv run python cli/main.py
+# Start Minikube
+minikube start --cpus=4 --memory=8192 --disk-size=50gb
+
+# Install Redis
+helm install redis bitnami/redis --set architecture=standalone
+
+# Build and load images
+./k8s/scripts/build-and-load.sh
+
+# Deploy app
+helm install todo-app ./k8s/helm/todo-app
 ```
 
-## Usage
+## Tech Stack
 
-### Main Menu Navigation
+### Frontend
+- **Next.js 16.1.1** - React framework with App Router
+- **React 19.2.3** - UI library
+- **TypeScript 5** - Type safety
+- **Tailwind CSS 4** - Styling
+- **shadcn/ui** - Component library
+- **Sonner** - Toast notifications
+- **nuqs** - URL state management
+- **Better Auth 1.4.10** - Authentication
 
-The main menu provides 5 options:
+### Backend
+- **Python 3.13+** - Runtime
+- **FastAPI** - Web framework
+- **SQLAlchemy** - ORM
+- **Neon PostgreSQL** - Database (serverless)
+- **OpenAI API** - AI chatbot
+- **WebSocket** - Real-time chat streaming
 
-1. **Add Task** - Create a new todo item
-2. **List Tasks** - View all your tasks
-3. **Edit Task** - Modify an existing task description
-4. **Delete Task** - Remove a task from your list
-5. **Exit** - Quit the application
+### Infrastructure
+- **Docker** - Containerization
+- **Minikube** - Local Kubernetes
+- **Helm 3** - Package manager
+- **Redpanda** - Kafka-compatible streaming
+- **Dapr** - Distributed application runtime
+- **Redis** - State store
 
-### Keyboard Shortcuts
+## Features Implemented
 
-| Key | Action | Context |
-|-----|--------|---------|
-| ↑↓ | Navigate | Main menu, task lists |
-| Enter | Select/Confirm | All screens |
-| Space | Toggle completion | Task list screen |
-| Esc | Cancel/Return | All screens |
+### Core Features
+- ✅ User authentication (login/register)
+- ✅ Task CRUD operations
+- ✅ Task status management (TODO, IN_PROGRESS, DONE)
+- ✅ Task priority levels (HIGH, MEDIUM, LOW)
+- ✅ Task tags management
+- ✅ Multi-column filtering
+- ✅ Multi-column sorting
+- ✅ Full-text search
+- ✅ Toast notifications (Sonner)
+- ✅ URL state persistence (nuqs)
 
-### Adding Tasks
+### AI Chatbot
+- ✅ Natural language task creation
+- ✅ Natural language task updates
+- ✅ Real-time streaming responses
+- ✅ WebSocket progress updates
 
-1. Select **Add Task** from the main menu
-2. Enter your task description
-3. Press **Enter** to save or **Esc** to cancel
-
-### Listing Tasks
-
-1. Select **List Tasks** from the main menu
-2. View all tasks with their completion status:
-   - `[ ]` = Uncompleted task
-   - `[x]` = Completed task
-3. Use **Space** to toggle task completion
-4. Press **Enter** to return to the main menu
-
-### Editing Tasks
-
-1. Select **Edit Task** from the main menu
-2. Use **arrow keys** to select a task
-3. Enter a new description
-4. Press **Enter** to save or **Esc** to cancel
-
-### Deleting Tasks
-
-1. Select **Delete Task** from the main menu
-2. Use **arrow keys** to select a task
-3. Press **Enter** or **D** to delete, or **Esc** to cancel
+### Deployment
+- ✅ Docker containers for frontend and backend
+- ✅ Kubernetes manifests (Deployments, Services, ConfigMaps)
+- ✅ Helm charts for easy deployment
+- ✅ Minikube local development
 
 ## Project Structure
 
 ```
 todo-list-hackathon/
-├── cli/
-│   ├── __init__.py
-│   ├── main.py                 # Application entry point
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── task.py             # Task dataclass
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── task_service.py     # Task CRUD operations
-│   └── ui/
-│       ├── __init__.py
-│       ├── main_menu.py        # Main menu screen
-│       ├── add_task.py         # Add task screen
-│       ├── task_list.py        # Task list screen
-│       ├── edit_task.py        # Edit task screen
-│       └── delete_task.py      # Delete task screen
-├── tests/
-│   └── unit/
-│       ├── test_task_model.py      # Task model tests
-│       └── test_task_service.py    # TaskService tests
-├── specs/
-│   └── 001-todo-cli-tui/
-│       ├── spec.md            # Feature specification
-│       ├── plan.md            # Implementation plan
-│       ├── tasks.md           # Implementation tasks
-│       └── ...
-├── pyproject.toml             # Project configuration
-└── README.md                  # This file
+├── frontend/              # Next.js frontend application
+│   ├── app/              # App Router pages
+│   ├── components/       # React components (shadcn/ui)
+│   └── lib/              # Utilities and API clients
+├── backend/              # FastAPI backend application
+│   ├── api/              # API endpoints
+│   ├── models/           # SQLAlchemy models
+│   ├── ai_agent/         # AI chatbot integration
+│   └── core/             # Core configuration
+├── k8s/                  # Kubernetes manifests
+│   ├── helm/             # Helm charts
+│   └── scripts/          # Deployment scripts
+├── specs/                # Feature specifications (SDD)
+│   ├── 001-todo-cli-tui/
+│   ├── 002-mcp-server-prompts/
+│   ├── 003-frontend-task-manager/
+│   ├── 004-ai-chatbot/
+│   ├── 005-ux-improvement/
+│   ├── 006-k8s-deployment/
+│   ├── 007-intermediate-todo-features/
+│   ├── 008-advanced-features/     # Due dates, notifications, recurring
+│   ├── 009-kafka-events/          # Event streaming
+│   ├── 010-dapr-integration/      # Dapr sidecars
+│   └── 011-cloud-k8s-deployment/  # Cloud deployment
+└── cli/                  # Original CLI TUI application
 ```
 
-## Running Tests
+## Development Workflow
 
-The project uses pytest for testing. Run the test suite:
+This project uses **Spec-Driven Development (SDD)**:
 
+1. **Specify** (`spec.md`) - Define requirements and acceptance criteria
+2. **Plan** (`plan.md`) - Design architecture and components
+3. **Tasks** (`tasks.md`) - Break down into actionable tasks
+4. **Implement** - Write code following the plan
+
+See `AGENTS.md` for detailed workflow guidelines.
+
+## Environment Variables
+
+### Frontend (`.env.local`)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### Backend (`.env`)
+```env
+DATABASE_URL=postgresql://...
+OPENAI_API_KEY=sk-...
+SECRET_KEY=your-secret-key
+```
+
+## Testing
+
+### Frontend
 ```bash
-# Run all unit tests
-uv run pytest tests/unit/ -v
-
-# Run with coverage
-uv run pytest --cov=cli --cov-report=html
-
-# Run specific test file
-uv run pytest tests/unit/test_task_model.py -v
+cd frontend
+pnpm test
 ```
 
-### Test Coverage
+### Backend
+```bash
+cd backend
+uv run pytest
+```
 
-- ✅ 17 tests for Task model (validation, toggle, immutability)
-- ✅ 23 tests for TaskService (CRUD operations, edge cases)
-- 🎯 100% coverage for models and services
-- 📊 40 total unit tests (all passing)
+## Deployment
 
-## Technology Stack
+### Vercel (Frontend)
+Frontend is automatically deployed to Vercel on push to `main` branch.
 
-- **Python 3.13+** - Modern Python with type hints
-- **Textual 0.80+** - TUI framework for terminal interfaces
-- **pytest** - Testing framework
-- **UV** - Fast Python package manager
+### Kubernetes (Full Stack)
+```bash
+# Build and push images
+./k8s/scripts/build-and-push.sh
 
-## Design Principles
-
-### Architecture
-
-- **Separation of Concerns** - Models, services, and UI are cleanly separated
-- **Immutable Data** - Task model uses frozen dataclass for safety
-- **Service Layer** - Business logic isolated in TaskService
-- **Screen Stack** - Navigation using push/pop pattern
-
-### Code Quality
-
-- **Type Hints** - Full type annotations throughout
-- **Input Validation** - Comprehensive validation at model and service layers
-- **Error Handling** - Graceful error handling with user-friendly messages
-- **Testing** - TDD approach with high test coverage
-
-## Development
-
-### Adding New Features
-
-1. Update `specs/001-todo-cli-tui/spec.md` with requirements
-2. Run `/sp.plan` to create implementation plan
-3. Run `/sp.tasks` to generate actionable tasks
-4. Implement following TDD: tests first, then code
-5. Update README.md with new features
-
-### Code Style
-
-The project follows these conventions:
-- Frozen dataclasses for immutable models
-- Async-first design with Textual framework
-- Keyboard-driven UI with screen stack navigation
-- Comprehensive validation and error handling
-
-## Limitations
-
-- **In-Memory Storage** - Tasks are stored in memory only (no persistence)
-- **Single Session** - Data is lost when application exits
-- **No Multi-Tasking** - One task at a time (no concurrent task management)
-
-## Future Enhancements
-
-Potential features for future versions:
-- 📁 Persistent storage (JSON, SQLite)
-- 🏷️ Task categories/tags
-- 📅 Due dates and reminders
-- 🔍 Search and filter tasks
-- 📤 Export tasks to various formats
-- 🎨 Enhanced visual themes
-- ⌨️ Custom keyboard shortcuts
+# Deploy to cluster
+helm upgrade --install todo-app ./k8s/helm/todo-app
+```
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a feature branch from `main`
+2. Follow SDD workflow (spec → plan → tasks → implement)
+3. Write tests for new features
+4. Submit a Pull Request
 
 ## License
 
-This project is open source and available under the MIT License.
+MIT License - See LICENSE file for details
 
 ## Acknowledgments
 
 Built with:
-- [Textual](https://textual.textualize.io/) - Modern TUI framework for Python
-- [UV](https://github.com/astral-sh/uv) - Fast Python package manager
-- [pytest](https://docs.pytest.org/) - Testing framework
+- [Next.js](https://nextjs.org/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Dapr](https://dapr.io/)
+- [Redpanda](https://redpanda.com/)
 
 ---
 
-**Version:** 1.0.0
-**Status:** Production Ready ✅
-**Last Updated:** January 2026
+**Version**: 2.0.0
+**Status**: In Development (Phase 8-11)
+**Last Updated**: January 2026
