@@ -22,6 +22,7 @@ import { TaskForm } from "./TaskForm";
 import { PriorityBadge } from "./PriorityBadge";
 import { TagBadgeGroup } from "./TagBadge";
 import { DueDateBadge } from "./DueDateBadge";
+import { RecurrenceBadge } from "./RecurrenceBadge";
 import { Button } from "@/components/ui/Button";
 import {
   AlertDialog,
@@ -176,9 +177,11 @@ export function TaskItem({ task, onDelete }: TaskItemProps) {
             <div className="flex flex-wrap items-center gap-2 mt-3">
               <PriorityBadge priority={localTask.priority} />
               <TagBadgeGroup tags={localTask.tags || []} />
+              <RecurrenceBadge recurrence={localTask.recurrence} />
               <DueDateBadge
                 dueDate={localTask.due_date}
                 urgency={localTask.urgency}
+                task={localTask}
               />
               <span className="text-xs text-muted-foreground/70">
                 {formatRelativeDate(localTask.created_at)}

@@ -251,19 +251,21 @@ def _normalize_priority(priority: Optional[str]) -> str:
         priority: Priority string to normalize
 
     Returns:
-        Normalized priority: "low", "medium", or "high"
+        Normalized priority: "LOW", "MEDIUM", or "HIGH" (uppercase enum values)
 
     Raises:
         ValueError: If priority is invalid
     """
+    from models.task import PriorityLevel
+
     if not priority:
-        return "medium"  # Default priority
+        return PriorityLevel.MEDIUM  # Default priority (uppercase)
 
     priority_normalized = priority.lower().strip()
 
-    # Direct matches
+    # Direct matches - return uppercase enum values
     if priority_normalized in ["low", "medium", "high"]:
-        return priority_normalized
+        return priority_normalized.upper()
 
     # Enhanced priority mapping from natural language patterns
     # [Task]: T011 - Integrate priority extraction in MCP tools
@@ -291,16 +293,16 @@ def _normalize_priority(priority: Optional[str]) -> str:
     if priority_normalized in priority_map_high or any(
         keyword in priority_normalized for keyword in ["urgent", "asap", "critical", "deadline", "today"]
     ):
-        return "high"
+        return PriorityLevel.HIGH
 
     # Check low priority patterns
     if priority_normalized in priority_map_low or any(
         keyword in priority_normalized for keyword in ["whenever", "later", "optional", "someday"]
     ):
-        return "low"
+        return PriorityLevel.LOW
 
     # Default to medium
-    return "medium"
+    return PriorityLevel.MEDIUM
 
 
 # Register tool with MCP server

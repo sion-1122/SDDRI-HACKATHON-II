@@ -28,6 +28,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { DueDateField } from "@/components/tasks/DueDateField";
+import { ReminderOffsetSelector } from "@/components/tasks/ReminderOffsetSelector";
+import { RecurrencePicker } from "@/components/tasks/RecurrencePicker";
 
 interface TaskFormProps {
     isOpen: boolean;
@@ -53,6 +56,8 @@ export function TaskForm({
         due_date: task?.due_date || null,
         priority: task?.priority || ("MEDIUM" as TaskPriority),
         tags: task?.tags || [],
+        reminder_offset: task?.reminder_offset ?? null,
+        recurrence: task?.recurrence ?? null,
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -66,6 +71,8 @@ export function TaskForm({
                 due_date: null,
                 priority: "MEDIUM",
                 tags: [],
+                reminder_offset: null,
+                recurrence: null,
             });
             setErrors({});
         } else if (isOpen && task) {
@@ -75,6 +82,8 @@ export function TaskForm({
                 due_date: task.due_date || null,
                 priority: task.priority as TaskPriority,
                 tags: task.tags || [],
+                reminder_offset: task.reminder_offset ?? null,
+                recurrence: task.recurrence ?? null,
             });
             setErrors({});
         }
@@ -176,6 +185,8 @@ export function TaskForm({
             due_date: null,
             priority: "MEDIUM",
             tags: [],
+            reminder_offset: null,
+            recurrence: null,
         });
         setErrors({});
         onClose();
@@ -269,64 +280,64 @@ export function TaskForm({
                         )}
                     </div>
 
-                    {/* Priority and Due Date - responsive */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label htmlFor="priority">Priority</Label>
-                            <Select
-                                value={formData.priority}
-                                onValueChange={(value) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        priority: value as TaskPriority,
-                                    }))
-                                }
-                            >
-                                <SelectTrigger id="priority" className="w-full">
-                                    <SelectValue placeholder="Select priority" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="LOW">Low</SelectItem>
-                                    <SelectItem value="MEDIUM">
-                                        Medium
-                                    </SelectItem>
-                                    <SelectItem value="HIGH">High</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <Label htmlFor="due_date">Due Date</Label>
-                            <Input
-                                id="due_date"
-                                name="due_date"
-                                type="date"
-                                value={
-                                    formData.due_date
-                                        ? formData.due_date.split("T")[0]
-                                        : ""
-                                }
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        due_date: value
-                                            ? new Date(value).toISOString()
-                                            : null,
-                                    }));
-                                }}
-                                className={cn(
-                                    errors.due_date &&
-                                        "border-destructive focus:ring-destructive",
-                                )}
-                            />
-                            {errors.due_date && (
-                                <p className="mt-1 text-xs text-destructive">
-                                    {errors.due_date}
-                                </p>
-                            )}
-                        </div>
+                    {/* Priority */}
+                    <div>
+                        <Label htmlFor="priority">Priority</Label>
+                        <Select
+                            value={formData.priority}
+                            onValueChange={(value) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    priority: value as TaskPriority,
+                                }))
+                            }
+                        >
+                            <SelectTrigger id="priority" className="w-full">
+                                <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="LOW">Low</SelectItem>
+                                <SelectItem value="MEDIUM">
+                                    Medium
+                                </SelectItem>
+                                <SelectItem value="HIGH">High</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
+
+                    {/* Due Date with DateTime Picker */}
+                    <DueDateField
+                        value={formData.due_date}
+                        onChange={(value) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                due_date: value,
+                            }))
+                        }
+                        error={errors.due_date}
+                    />
+
+                    {/* Reminder Offset Selector */}
+                    <ReminderOffsetSelector
+                        value={formData.reminder_offset}
+                        onChange={(value) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                reminder_offset: value,
+                            }))
+                        }
+                    />
+
+                    {/* Recurrence Picker */}
+                    <RecurrencePicker
+                        value={formData.recurrence}
+                        onChange={(value) =>
+                            setFormData((prev) => ({
+                                ...prev,
+                                recurrence: value,
+                            }))
+                        }
+                    />
 
                     <DialogFooter className="px-0">
                         <div className="w-full flex justify-end gap-2">

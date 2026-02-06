@@ -55,6 +55,10 @@ def main():
     migrations = [
         "001_add_user_id_index.sql",
         "002_add_conversation_and_message_tables.sql",  # Phase III: AI Chatbot
+        "003_add_due_date_and_priority_to_tasks.sql",   # Phase III: UX Improvements
+        "004_add_performance_indexes.sql",              # Phase III: UX Improvements
+        "005_add_tags_to_tasks.sql",                    # Phase VII: Intermediate Features
+        "008_add_advanced_features.sql",                # Phase VIII: Advanced Features
     ]
 
     print("🚀 Starting database migrations...\n")

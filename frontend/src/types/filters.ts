@@ -30,6 +30,9 @@ export interface FilterState {
   sortBy?: SortBy;               // [T055]
   sortOrder?: SortOrder;         // [T055]
   page: number;                  // [T012]
+  // Advanced features: due date range filters (T014)
+  due_before?: string;           // ISO 8601 datetime
+  due_after?: string;            // ISO 8601 datetime
 }
 
 export interface FilterActions {
@@ -130,6 +133,20 @@ export const filterParsers = {
     },
     serialize: (value: number): string | null =>
       value === 1 ? null : value.toString(),
+  },
+
+  // Due before parser: ISO 8601 datetime string [T028]
+  due_before: {
+    defaultValue: null as string | null,
+    parse: (value: string | null): string | null => value,
+    serialize: (value: string | null): string | null => value,
+  },
+
+  // Due after parser: ISO 8601 datetime string [T028]
+  due_after: {
+    defaultValue: null as string | null,
+    parse: (value: string | null): string | null => value,
+    serialize: (value: string | null): string | null => value,
   },
 };
 

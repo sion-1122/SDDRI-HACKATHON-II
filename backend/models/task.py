@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Optional
 from sqlmodel import Field, SQLModel, Column
 from pydantic import field_validator
-from sqlalchemy import ARRAY, String
+from sqlalchemy import ARRAY, String, JSON
 
 
 class PriorityLevel(str, Enum):
@@ -52,6 +52,26 @@ class Task(SQLModel, table=True):
         default=None,
         index=True
     )
+    # Reminder fields (T003-T004)
+    reminder_offset: Optional[int] = Field(
+        default=None,
+        description="Minutes before due_date to send notification (0 = at due time)"
+    )
+    reminder_sent: bool = Field(
+        default=False,
+        description="Whether notification has been sent for this task"
+    )
+    # Recurrence fields (T005-T006)
+    recurrence: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSON, nullable=True),
+        description="Recurrence rule as JSONB (frequency, interval, count, end_date)"
+    )
+    parent_task_id: Optional[uuid.UUID] = Field(
+        default=None,
+        foreign_key="tasks.id",
+        description="For recurring task instances, links to the original task"
+    )
     completed: bool = Field(default=False)
     created_at: datetime = Field(
         default_factory=datetime.utcnow
@@ -68,10 +88,25 @@ class TaskCreate(SQLModel):
     """
     title: str = Field(min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
-    priority: PriorityLevel = Field(default=PriorityLevel.MEDIUM)
+    priority: str = Field(default="MEDIUM")
     tags: list[str] = Field(default=[])
     due_date: Optional[datetime] = None
+    # Advanced features fields (T007)
+    reminder_offset: Optional[int] = Field(default=None, ge=0)
+    recurrence: Optional[dict] = Field(default=None)
     completed: bool = False
+
+    @field_validator('priority')
+    @classmethod
+    def normalize_priority(cls, v: str) -> str:
+        """Normalize priority to uppercase."""
+        if isinstance(v, str):
+            v = v.upper()
+        # Validate against enum values
+        valid_values = {e.value for e in PriorityLevel}
+        if v not in valid_values:
+            raise ValueError(f"priority must be one of {valid_values}")
+        return v
 
     @field_validator('tags')
     @classmethod
@@ -119,10 +154,25 @@ class TaskUpdate(SQLModel):
     """
     title: Optional[str] = Field(default=None, min_length=1, max_length=255)
     description: Optional[str] = Field(default=None, max_length=2000)
-    priority: Optional[PriorityLevel] = None
+    priority: Optional[str] = None
     tags: Optional[list[str]] = None
     due_date: Optional[datetime] = None
+    # Advanced features fields (T008)
+    reminder_offset: Optional[int] = Field(default=None, ge=0)
+    recurrence: Optional[dict] = None
     completed: Optional[bool] = None
+
+    @field_validator('priority')
+    @classmethod
+    def normalize_priority(cls, v: Optional[str]) -> Optional[str]:
+        """Normalize priority to uppercase."""
+        if v is not None and isinstance(v, str):
+            v = v.upper()
+            # Validate against enum values
+            valid_values = {e.value for e in PriorityLevel}
+            if v not in valid_values:
+                raise ValueError(f"priority must be one of {valid_values}")
+        return v
 
     @field_validator('tags')
     @classmethod
@@ -177,6 +227,11 @@ class TaskRead(SQLModel):
     priority: PriorityLevel
     tags: list[str]
     due_date: Optional[datetime] | None
+    # Advanced features fields (T009)
+    reminder_offset: Optional[int] | None
+    reminder_sent: bool
+    recurrence: Optional[dict] | None
+    parent_task_id: Optional[uuid.UUID] | None
     completed: bool
     created_at: datetime
     updated_at: datetime

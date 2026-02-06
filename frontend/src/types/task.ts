@@ -5,6 +5,7 @@
 */
 
 import type { TaskFormData } from './forms';
+import type { RecurrenceRule } from './recurrence';
 
 // Task urgency computed from due date (not from backend)
 export type TaskUrgency = 'overdue' | 'due-today' | 'due-soon' | 'due-later' | 'none';
@@ -23,6 +24,11 @@ export interface Task {
   priority: TaskPriority;      // Priority level [T010]
   tags: TaskTagName[];         // Array of tag names [T035]
   due_date: string | null;     // ISO 8601 datetime or null [T010]
+  // Advanced features fields (T011)
+  reminder_offset: number | null;  // Minutes before due_date (null = no reminder)
+  reminder_sent: boolean;       // Whether notification was sent
+  recurrence: RecurrenceRule | null;  // Recurrence rule for repeating tasks
+  parent_task_id: string | null;  // For recurring task instances
   completed: boolean;          // Completion status
   created_at: string;          // ISO 8601 datetime (UTC)
   updated_at: string;          // ISO 8601 datetime (UTC)
@@ -33,9 +39,16 @@ export interface Task {
 
 export type TaskCreate = Pick<TaskFormData, 'title' | 'description' | 'due_date' | 'priority'> & {
   tags?: TaskTagName[];
+  // Advanced features fields (T012)
+  reminder_offset?: number;
+  recurrence?: RecurrenceRule;
 };
 
-export type TaskUpdate = Partial<Pick<Task, 'title' | 'description' | 'due_date' | 'priority' | 'completed' | 'tags'>>;
+export type TaskUpdate = Partial<Pick<Task, 'title' | 'description' | 'due_date' | 'priority' | 'completed' | 'tags'>> & {
+  // Advanced features fields (T013)
+  reminder_offset?: number;
+  recurrence?: RecurrenceRule | null;  // null = remove recurrence
+};
 
 // Re-export TaskFormData for convenience
 export type { TaskFormData } from './forms';

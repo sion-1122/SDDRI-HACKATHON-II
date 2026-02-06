@@ -116,6 +116,8 @@ export function TaskListClient({ initialTasks, initialTotal }: TaskListClientPro
           priority?: 'LOW' | 'MEDIUM' | 'HIGH';
           tags?: string[];
           due_date?: 'overdue' | 'today' | 'week' | 'month';
+          due_before?: string; // [T028]
+          due_after?: string; // [T028]
           sort_by?: 'created_at' | 'due_date' | 'priority' | 'title';
           sort_order?: 'asc' | 'desc';
         } = {
@@ -145,6 +147,14 @@ export function TaskListClient({ initialTasks, initialTotal }: TaskListClientPro
           params.due_date = filters.dueDate;
         }
 
+        // Add date range filters if present [T028]
+        if (filters.due_before) {
+          params.due_before = filters.due_before;
+        }
+        if (filters.due_after) {
+          params.due_after = filters.due_after;
+        }
+
         // Add sort parameters if present [T056]
         if (filters.sortBy) {
           params.sort_by = filters.sortBy;
@@ -162,7 +172,7 @@ export function TaskListClient({ initialTasks, initialTotal }: TaskListClientPro
     };
 
     loadTasks();
-  }, [filters.status, filters.priority, filters.tags, filters.dueDate, filters.sortBy, filters.sortOrder, filters.page]);
+  }, [filters.status, filters.priority, filters.tags, filters.dueDate, filters.due_before, filters.due_after, filters.sortBy, filters.sortOrder, filters.page]);
 
   return (
     <>

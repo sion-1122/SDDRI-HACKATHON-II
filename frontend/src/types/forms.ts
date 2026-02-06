@@ -1,10 +1,11 @@
 /* Form data type definitions.
 
-[Task]: T011
-[From]: specs/003-frontend-task-manager/data-model.md, specs/005-ux-improvement/data-model.md
+[Task]: T011, T048, T071
+[From]: specs/003-frontend-task-manager/data-model.md, specs/005-ux-improvement/data-model.md, specs/008-advanced-features/tasks.md (User Story 2, User Story 3)
 */
 
 import type { TaskPriority } from './task';
+import type { RecurrenceRule } from './recurrence';
 
 // Task Form
 export interface TaskFormData {
@@ -13,6 +14,8 @@ export interface TaskFormData {
   due_date: string | null;
   priority: TaskPriority;
   tags: string[];  // [T035] Array of tag names
+  reminder_offset: number | null;  // [T048] Minutes before due date to notify (0 = at due time)
+  recurrence: RecurrenceRule | null;  // [T071] Recurrence rule for repeating tasks
 }
 
 export interface TaskFormErrors {
