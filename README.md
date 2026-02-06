@@ -27,36 +27,54 @@ This is a hackathon project demonstrating modern full-stack development practice
 | Phase 5 | ✅ Complete | UX Improvements (Toast notifications, URL state) |
 | Phase 6 | ✅ Complete | Intermediate Todo Features (Priority, Tags, Filters, Sort, Search) |
 | Phase 7 | ✅ Complete | Kubernetes Deployment (Minikube + Helm) |
+| Phase 8 | ✅ Complete | Advanced Features (Due Dates, Reminders, Recurring Tasks) |
 
-### Phase 8: Advanced Features (In Progress)
+### Phase 8: Advanced Features (Complete)
 
-**Branch**: `008-advanced-features`
-
-#### Completed
-- ✅ Specification created
-
-#### Pending
-- ⏳ Due Dates with DateTime Picker (shadcn DatePicker)
-- ⏳ Browser Notifications for Reminders
-- ⏳ Recurring Tasks (daily/weekly/monthly)
-- ⏳ Overdue task highlighting
-- ⏳ Notification preferences UI
-
-### Phase 9: Kafka Event Streaming (Spec Created)
-
-**Branch**: `009-kafka-events`
+**Branch**: `main` (merged)
 
 #### Completed
-- ✅ Specification created
-- ✅ Minikube cluster started
-- ✅ cert-manager installed for TLS
+- ✅ Due Dates with DateTime Picker
+- ✅ Browser Notifications for Reminders
+- ✅ Recurring Tasks (daily/weekly/monthly/custom)
+- ✅ Overdue task highlighting
+- ✅ Cron expression support for advanced recurrence
+- ✅ Backend reminder service implementation
 
-#### Pending
-- ⏳ Redpanda Kafka deployment (failed - needs retry with adjusted resources)
-- ⏳ Kafka topics creation (task-events, reminders, task-updates)
-- ⏳ Event publishing from Chat API
-- ⏳ Event consumers for reminders
-- ⏳ Event schemas definition
+### Phase 9: Kafka Event Streaming (Architecture Complete)
+
+**Branch**: `k8s-infra`
+
+**Status**: ✅ Architecture Documentation Complete | ⏸️ Deployment Deferred (Resource Constraints)
+
+This phase delivers complete event-driven architecture design with production-ready schemas and contracts. Due to local resource constraints (Minikube requires 2+ CPU cores, 4+ GB RAM) and lack of cloud access, the actual Kafka deployment is deferred. The architecture is fully documented and ready for deployment when resources become available.
+
+#### Completed Documentation
+- ✅ Complete event schema specifications (8 event types)
+- ✅ TypeScript type definitions (`contracts/event-schemas.ts`)
+- ✅ Python Pydantic models (`contracts/event_schemas.py`)
+- ✅ Kafka topic configurations (4 topics with retention policies)
+- ✅ Dapr component specifications
+- ✅ Implementation guide with deployment steps
+- ✅ Migration path from current infrastructure
+
+#### Event Types Defined
+- `task-created` - Published when new task is created
+- `task-updated` - Published when task fields change
+- `task-deleted` - Published when task is removed
+- `task-completed` - Published when task marked done
+- `reminder-scheduled` - Published when reminder is set
+- `reminder-triggered` - Published when reminder fires
+- `reminder-cancelled` - Published when reminder cancelled
+- `recurrence-instance-created` - Published for recurring task instances
+
+#### Deferred (Requires Resources)
+- ⏸️ Redpanda Kafka cluster deployment
+- ⏸️ Dapr sidecar integration
+- ⏸️ Event publishing implementation in backend
+- ⏸️ Reminder consumer service deployment
+
+**Documentation**: See `specs/009-kafka-events/README.md` for full architecture details
 
 ### Phase 10: Dapr Integration (Spec Created)
 
@@ -202,8 +220,8 @@ todo-list-hackathon/
 │   ├── 005-ux-improvement/
 │   ├── 006-k8s-deployment/
 │   ├── 007-intermediate-todo-features/
-│   ├── 008-advanced-features/     # Due dates, notifications, recurring
-│   ├── 009-kafka-events/          # Event streaming
+│   ├── 008-advanced-features/     # Due dates, notifications, recurring (Complete)
+│   ├── 009-kafka-events/          # Event streaming architecture (Documentation complete)
 │   ├── 010-dapr-integration/      # Dapr sidecars
 │   └── 011-cloud-k8s-deployment/  # Cloud deployment
 └── cli/                  # Original CLI TUI application
@@ -286,6 +304,6 @@ Built with:
 
 ---
 
-**Version**: 2.0.0
-**Status**: In Development (Phase 8-11)
-**Last Updated**: January 2026
+**Version**: 2.1.0
+**Status**: Production Ready (Vercel + Hugging Face Spaces) | Phase 9 Architecture Complete
+**Last Updated**: February 2026
