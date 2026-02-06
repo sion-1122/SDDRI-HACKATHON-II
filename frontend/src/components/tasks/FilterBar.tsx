@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { DateRangeFilter } from '@/components/tasks/DateRangeFilter';
 
 // nuqs parsers for type-safe URL state
 import { filterParsers } from '@/types/filters';
@@ -101,6 +102,8 @@ export function FilterBar() {
       searchQuery: '',
       priority: null,
       dueDate: null,
+      due_before: null,
+      due_after: null,
       tags: null,
       sortBy: null,
       sortOrder: 'asc',
@@ -112,6 +115,8 @@ export function FilterBar() {
     filters.searchQuery !== '' ||
     filters.priority !== null ||
     filters.dueDate !== null ||
+    filters.due_before !== null ||
+    filters.due_after !== null ||
     (filters.tags !== null && filters.tags.length > 0) ||
     filters.sortBy !== null;
 
@@ -245,6 +250,15 @@ export function FilterBar() {
               )}
             </div>
           )}
+
+          {/* Date range filter [T036] - custom date range */}
+          <DateRangeFilter
+            dueBefore={filters.due_before}
+            dueAfter={filters.due_after}
+            onChange={(dueBefore, dueAfter) =>
+              setFilters({ due_before: dueBefore, due_after: dueAfter })
+            }
+          />
         </div>
 
         {/* Sort controls [T053, T054] */}
@@ -311,6 +325,16 @@ export function FilterBar() {
           {filters.dueDate && (
             <span className="flex items-center gap-1">
               Due: <strong className="text-foreground capitalize">{filters.dueDate}</strong>
+            </span>
+          )}
+          {filters.due_before && (
+            <span className="flex items-center gap-1">
+              Before: <strong className="text-foreground">{new Date(filters.due_before).toLocaleDateString()}</strong>
+            </span>
+          )}
+          {filters.due_after && (
+            <span className="flex items-center gap-1">
+              After: <strong className="text-foreground">{new Date(filters.due_after).toLocaleDateString()}</strong>
             </span>
           )}
           {filters.tags && filters.tags.length > 0 && (

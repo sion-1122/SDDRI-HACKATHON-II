@@ -32,6 +32,7 @@ export interface TaskApi {
   deleteTask(taskId: string): Promise<{ ok: boolean }>;
   toggleComplete(taskId: string): Promise<Task>;
   getAllTags(): Promise<TagsListResponse>; // [T038]
+  updateReminder(taskId: string, reminder_offset: number | null, resetSent?: boolean): Promise<Task>; // [T058]
 }
 
 export interface TaskListParams {
@@ -42,6 +43,8 @@ export interface TaskListParams {
   priority?: 'LOW' | 'MEDIUM' | 'HIGH';
   tags?: TaskTagName[]; // [T037]
   due_date?: 'overdue' | 'today' | 'week' | 'month'; // [T047]
+  due_before?: string; // [T028] ISO 8601 datetime string
+  due_after?: string; // [T028] ISO 8601 datetime string
   timezone?: string; // [T047]
   sort_by?: 'created_at' | 'due_date' | 'priority' | 'title'; // [T056]
   sort_order?: 'asc' | 'desc'; // [T056]
@@ -148,6 +151,9 @@ export class TaskApiClient implements TaskApi {
     }
     // [T047] Add due_date and timezone to query parameters
     if (params?.due_date) queryParams.append('due_date', params.due_date);
+    // [T028] Add due_before and due_after for date range filtering
+    if (params?.due_before) queryParams.append('due_before', params.due_before);
+    if (params?.due_after) queryParams.append('due_after', params.due_after);
     // Get user's timezone from browser (or use provided timezone)
     const timezone = params?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     queryParams.append('timezone', timezone);
@@ -251,6 +257,31 @@ export class TaskApiClient implements TaskApi {
    */
   async getAllTags(): Promise<TagsListResponse> {
     return this.request<TagsListResponse>('/api/tasks/tags');
+  }
+
+  /**
+   * Update reminder settings for a task [T058]
+   * Updates reminder_offset and optionally resets reminder_sent flag
+   */
+  async updateReminder(
+    taskId: string,
+    reminder_offset: number | null,
+    resetSent: boolean = false
+  ): Promise<Task> {
+    const params = new URLSearchParams()
+    if (reminder_offset !== null) {
+      params.append('reminder_offset', reminder_offset.toString())
+    }
+    if (resetSent) {
+      params.append('reset_sent', 'true')
+    }
+
+    const queryString = params.toString()
+    const endpoint = `/api/tasks/${taskId}/reminder${queryString ? `?${queryString}` : ''}`
+
+    return this.request<Task>(endpoint, {
+      method: 'PATCH',
+    })
   }
 }
 
