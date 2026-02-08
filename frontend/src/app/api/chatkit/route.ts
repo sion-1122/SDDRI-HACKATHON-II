@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 
 // Read backend URL dynamically to ensure it's available at runtime
 function getBackendUrl(): string {
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL';
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL;
   
   // Log in development to help debug
   if (process.env.NODE_ENV === 'development') {

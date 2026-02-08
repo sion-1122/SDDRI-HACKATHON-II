@@ -71,6 +71,8 @@ async function fetchWithTimeout(
   }
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 export const apiClientFn = async ({
   url,
   method = "GET",
@@ -86,7 +88,7 @@ export const apiClientFn = async ({
   // Browser sends it automatically, no need to add Authorization header
   try {
     const response = await fetchWithTimeout(
-      `http://localhost:8000${url}`,
+      `${API_URL}${url}`,
       {
         method,
         headers,
