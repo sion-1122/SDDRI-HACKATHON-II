@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { MessageCircle, X } from "lucide-react";
 import { TaskChat } from "@/components/chat/TaskChat";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -14,49 +15,34 @@ export function FloatingChat() {
 
     if (!isAuthenticated || !user) return null;
 
+    // Render button at document.body level to avoid any positioning context issues
+    const button = (
+        <button
+            onClick={toggleChat}
+            className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 ease-in-out hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            style={{ position: 'fixed', bottom: '24px', right: '24px', left: 'auto' }}
+            aria-label={isOpen ? "Close chat" : "Open chat"}
+        >
+            {isOpen ? (
+                <X className="w-6 h-6" />
+            ) : (
+                <>
+                    <MessageCircle className="w-6 h-6" />
+                    {/* Unread count badge */}
+                    {unreadCount > 0 && (
+                        <span
+                            className="absolute -top-1 -right-1 flex items-center justify-center min-w-[20px] h-5 px-1 bg-destructive text-destructive-foreground text-xs font-bold rounded-full animate-bounce"
+                        >
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                    )}
+                </>
+            )}
+        </button>
+    );
+
     return (
         <>
-            {/* Floating chat button - positioned bottom-right */}
-            <button
-                onClick={toggleChat}
-                className={cn(
-                    "fixed bottom-6 right-6 z-40",
-                    "relative", // ensure absolutely positioned badge anchors to this button
-                    "flex items-center justify-center",
-                    "w-14 h-14 rounded-full",
-                    "bg-primary text-primary-foreground",
-                    "shadow-lg hover:shadow-xl",
-                    "transition-all duration-200 ease-in-out",
-                    "hover:scale-110 active:scale-95",
-                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                )}
-                aria-label={isOpen ? "Close chat" : "Open chat"}
-            >
-                {isOpen ? (
-                    <X className="w-6 h-6" />
-                ) : (
-                    <>
-                        <MessageCircle className="w-6 h-6" />
-                        {/* Unread count badge */}
-                        {unreadCount > 0 && (
-                            <span
-                                className={cn(
-                                    "absolute -top-1 -right-1",
-                                    "flex items-center justify-center",
-                                    "min-w-[20px] h-5 px-1",
-                                    "bg-destructive text-destructive-foreground",
-                                    "text-xs font-bold",
-                                    "rounded-full",
-                                    "animate-bounce",
-                                )}
-                            >
-                                {unreadCount > 9 ? "9+" : unreadCount}
-                            </span>
-                        )}
-                    </>
-                )}
-            </button>
-
             {/* Sheet panel for chat interface */}
             <Sheet open={isOpen} onOpenChange={(open) => !open && closeChat()}>
                 <SheetContent
@@ -99,6 +85,9 @@ export function FloatingChat() {
                     </div>
                 </SheetContent>
             </Sheet>
+
+            {/* Render button outside any container using Portal - only show when sheet is closed */}
+            {!isOpen && typeof window !== 'undefined' && createPortal(button, document.body)}
         </>
     );
 }

@@ -36,6 +36,7 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #1566 | 12:38 PM | 🔴 | Missing tool_calls Column Database Schema Issue | ~194 |
 | #1531 | 11:58 AM | 🔴 | Message Model conversation_id NotNull Constraint Violation | ~159 |
 | #1528 | 11:53 AM | 🔴 | Missing Database Schema Migration for tool_calls Column | ~180 |
 </claude-mem-context>
