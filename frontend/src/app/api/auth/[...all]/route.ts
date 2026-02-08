@@ -43,16 +43,22 @@ async function proxyRequest(request: NextRequest) {
     }
 
     // Get request body if it exists
-    let body: ReadableStream | null = null;
+    let body: string | null = null;
     if (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH') {
-      body = request.body;
+      try {
+        // Read the request body as text
+        body = await request.text();
+      } catch (e) {
+        // If body is empty or unreadable, set to null
+        body = null;
+      }
     }
 
     // Proxy the request to FastAPI backend
     const response = await fetch(backendUrl, {
       method: request.method,
       headers,
-      body,
+      body: body || undefined,
       // Include cookies for session management
       credentials: 'include',
     });
@@ -85,61 +91,94 @@ async function proxyRequest(request: NextRequest) {
       }
     });
 
+    // Determine if we're in a secure context (HTTPS or production)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isSecure = isProduction || request.url.startsWith('https://');
+
     // Forward Set-Cookie headers, but adjust domain/path/secure settings for frontend
     for (const cookie of setCookieHeaders) {
-      // Parse the cookie string
-      const parts = cookie.split(';');
-      const [cookiePart, ...attributes] = parts;
-      const nameValue = cookiePart.split('=');
-      if (nameValue.length < 2) continue;
-      
-      const name = nameValue[0].trim();
-      const value = nameValue.slice(1).join('='); // Handle values that contain '='
-      
-      // Extract cookie attributes
-      const cookieOptions: {
-        httpOnly?: boolean;
-        secure?: boolean;
-        sameSite?: 'strict' | 'lax' | 'none';
-        maxAge?: number;
-        path?: string;
-      } = {};
-
-      for (const attr of attributes) {
-        const trimmed = attr.trim().toLowerCase();
-        if (trimmed === 'httponly') {
-          cookieOptions.httpOnly = true;
-        } else if (trimmed === 'secure') {
-          cookieOptions.secure = true;
-        } else if (trimmed.startsWith('samesite=')) {
-          const sameSiteValue = trimmed.split('=')[1].trim().toLowerCase();
-          if (['strict', 'lax', 'none'].includes(sameSiteValue)) {
-            cookieOptions.sameSite = sameSiteValue as 'strict' | 'lax' | 'none';
-          }
-        } else if (trimmed.startsWith('max-age=')) {
-          const maxAge = parseInt(trimmed.split('=')[1].trim(), 10);
-          if (!isNaN(maxAge)) {
-            cookieOptions.maxAge = maxAge;
-          }
-        } else if (trimmed.startsWith('path=')) {
-          cookieOptions.path = trimmed.split('=')[1].trim();
+      try {
+        // Parse the cookie string
+        const parts = cookie.split(';');
+        const [cookiePart, ...attributes] = parts;
+        
+        // Handle cookie name=value (value may be empty for deletion)
+        const equalsIndex = cookiePart.indexOf('=');
+        if (equalsIndex === -1) {
+          // Invalid cookie format, skip
+          continue;
         }
-      }
+        
+        const name = cookiePart.substring(0, equalsIndex).trim();
+        const value = cookiePart.substring(equalsIndex + 1).trim();
+        
+        // Extract cookie attributes
+        const cookieOptions: {
+          httpOnly?: boolean;
+          secure?: boolean;
+          sameSite?: 'strict' | 'lax' | 'none';
+          maxAge?: number;
+          path?: string;
+        } = {};
 
-      // Set cookie with frontend-appropriate settings
-      // Don't set domain - let browser use default (current domain)
-      // In production, ensure secure is true if request is HTTPS
-      const isProduction = process.env.NODE_ENV === 'production';
-      const isSecure = isProduction || request.url.startsWith('https://');
-      
-      nextResponse.cookies.set(name, value, {
-        httpOnly: cookieOptions.httpOnly ?? true,
-        secure: cookieOptions.secure ?? isSecure,
-        sameSite: cookieOptions.sameSite ?? 'lax',
-        maxAge: cookieOptions.maxAge,
-        path: cookieOptions.path ?? '/',
-        // Don't set domain - browser will use current domain
-      });
+        for (const attr of attributes) {
+          const trimmed = attr.trim().toLowerCase();
+          if (trimmed === 'httponly') {
+            cookieOptions.httpOnly = true;
+          } else if (trimmed === 'secure') {
+            cookieOptions.secure = true;
+          } else if (trimmed.startsWith('samesite=')) {
+            const sameSiteValue = trimmed.split('=')[1].trim().toLowerCase();
+            if (['strict', 'lax', 'none'].includes(sameSiteValue)) {
+              cookieOptions.sameSite = sameSiteValue as 'strict' | 'lax' | 'none';
+            }
+          } else if (trimmed.startsWith('max-age=')) {
+            const maxAgeStr = trimmed.split('=')[1].trim();
+            const maxAge = parseInt(maxAgeStr, 10);
+            if (!isNaN(maxAge)) {
+              cookieOptions.maxAge = maxAge;
+            }
+          } else if (trimmed.startsWith('expires=')) {
+            // Handle Expires attribute (for cookie deletion, backend might use this)
+            // If Expires is in the past, treat as deletion (maxAge: 0)
+            try {
+              const expiresStr = trimmed.split('=')[1].trim();
+              const expiresDate = new Date(expiresStr);
+              if (expiresDate.getTime() < Date.now()) {
+                // Cookie is expired, set maxAge to 0 to delete
+                cookieOptions.maxAge = 0;
+              }
+            } catch (e) {
+              // Invalid date, ignore
+            }
+          } else if (trimmed.startsWith('path=')) {
+            const pathValue = trimmed.split('=')[1].trim();
+            cookieOptions.path = pathValue;
+          }
+        }
+
+        // Handle cookie deletion: if maxAge is 0 or negative, delete the cookie
+        if (cookieOptions.maxAge !== undefined && cookieOptions.maxAge <= 0) {
+          nextResponse.cookies.delete(name, {
+            path: cookieOptions.path ?? '/',
+            sameSite: cookieOptions.sameSite ?? 'lax',
+          });
+        } else {
+          // Set cookie with frontend-appropriate settings
+          // Don't set domain - let browser use default (current domain)
+          nextResponse.cookies.set(name, value, {
+            httpOnly: cookieOptions.httpOnly ?? true,
+            secure: cookieOptions.secure ?? isSecure,
+            sameSite: cookieOptions.sameSite ?? 'lax',
+            maxAge: cookieOptions.maxAge,
+            path: cookieOptions.path ?? '/',
+            // Don't set domain - browser will use current domain
+          });
+        }
+      } catch (parseError) {
+        // If cookie parsing fails, log but continue with other cookies
+        console.warn('Failed to parse cookie:', cookie, parseError);
+      }
     }
 
     return nextResponse;
