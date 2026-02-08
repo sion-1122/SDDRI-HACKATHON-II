@@ -13,6 +13,7 @@ This directory contains the frontend application for the Todo List app, built wi
 - **Validation**: Zod
 - **Notifications**: Sonner (toast notifications)
 - **Language**: TypeScript 5+ with strict mode
+- **AI Chat**: OpenAI ChatKit React library (@openai/chatkit-react ^1.4.1)
 
 ## Project Structure
 
@@ -504,6 +505,153 @@ Or deploy to Vercel, Netlify, or any Node.js hosting platform.
 - Feature Specification: [specs/003-frontend-task-manager/spec.md](../specs/003-frontend-task-manager/spec.md)
 - Implementation Plan: [specs/003-frontend-task-manager/plan.md](../specs/003-frontend-task-manager/plan.md)
 - Backend API: [backend/api/](../backend/api/)
+
+---
+
+## ChatKit Integration (Phase 010-chatkit-migration)
+
+### Overview
+
+The frontend uses **OpenAI ChatKit React** library for AI-powered task management chat with **Gemini LLM**.
+
+**[From]: specs/010-chatkit-migration/**
+
+### Key Component: TaskChat
+
+**Location**: `src/components/chat/TaskChat.tsx`
+
+The `TaskChat` component wraps ChatKit React with custom authentication for httpOnly cookies.
+
+```typescript
+import { TaskChat } from "@/components/chat/TaskChat";
+
+// Usage in chat page
+<TaskChat
+  userId={user?.id || ""}
+  initialThreadId={currentThreadId}
+  className="h-full w-full"
+/>
+```
+
+### Custom Authentication
+
+ChatKit requires custom fetch implementation to include JWT cookies:
+
+```typescript
+const customFetch = async (url: string, options: RequestInit = {}) => {
+  return fetch(url, {
+    ...options,
+    credentials: "include", // Critical: includes httpOnly auth_token cookie
+    headers: {
+      ...options.headers,
+      "Content-Type": "application/json",
+    },
+  });
+};
+```
+
+### useChatKit Configuration
+
+```typescript
+const { control, error } = useChatKit({
+  api: {
+    apiURL: `${API_URL}/api/chatkit`,
+    fetch: customFetch,
+  },
+  initialThreadID: initialThreadId,
+});
+```
+
+### SSE Event Types
+
+ChatKit handles these SSE events from the backend:
+
+```typescript
+// Streaming text response
+event: message_delta
+data: {"type": "text", "text": "Hello!"}
+
+// Tool execution
+event: tool_call_created
+data: {"tool": "create_task", "args": {...}}
+
+// Message complete
+event: message_done
+data: {"message_id": "...", "role": "assistant"}
+
+// Error
+event: error
+data: {"detail": "Error message"}
+```
+
+### Built-in Features
+
+ChatKit React provides these features out of the box:
+
+- **Streaming Responses**: Real-time text streaming
+- **Tool Visualization**: Automatic tool call UI display
+- **Connection Status**: Built-in online/offline indicators
+- **Error Handling**: Graceful error recovery
+- **Thread Management**: Automatic conversation persistence
+- **Cross-Tab Sync**: State synchronization across browser tabs
+
+### Chat Pages
+
+**Full Chat Page** (`src/app/chat/page.tsx`):
+```typescript
+<main className="flex-1 overflow-hidden p-4">
+  <TaskChat
+    userId={user?.id || ""}
+    initialThreadId={currentThreadId}
+    className="h-full w-full max-w-5xl mx-auto"
+  />
+</main>
+```
+
+**Floating Chat** (`src/components/chatbot/FloatingChat.tsx`):
+```typescript
+// Embedded in dashboard for quick access
+<TaskChat userId={user.id} className="h-full w-full" />
+```
+
+### Removed Components
+
+The following custom chat components were removed (replaced by ChatKit):
+
+- `ChatInterface.tsx` - Replaced by TaskChat
+- `MessageList.tsx` - ChatKit handles message display
+- `MessageInput.tsx` - ChatKit handles input
+- `ProgressBar.tsx` - ChatKit shows tool progress
+- `ConnectionStatus.tsx` - ChatKit has built-in status
+- `useWebSocket.ts` - SSE replaces WebSocket
+
+### Environment Variables
+
+```bash
+# Backend API URL for ChatKit endpoint
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Styling
+
+TaskChat wrapper accepts Tailwind classes:
+
+```typescript
+<TaskChat
+  userId={user.id}
+  className="h-full w-full border rounded-lg shadow-sm"
+/>
+```
+
+The inner `<ChatKit>` component is styled by the library but can be customized via CSS variables.
+
+### Related Documentation
+
+- [ChatKit Migration Spec](../specs/010-chatkit-migration/spec.md)
+- [ChatKit Migration Plan](../specs/010-chatkit-migration/plan.md)
+- [ChatKit Research](../specs/010-chatkit-migration/research.md)
+- [Backend ChatKit Docs](../backend/CLAUDE.md#chatkit-architecture)
+
 
 
 <claude-mem-context>

@@ -16,7 +16,7 @@ export const metadata = {
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-[95vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl">
+      <div className="w-full max-w-[95vw] sm:max-w-[480px] md:max-w-[600px] lg:max-w-[700px] xl:max-w-[800px]">
         {/* Notion-inspired header - clean and minimal */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-foreground tracking-tight mb-2">

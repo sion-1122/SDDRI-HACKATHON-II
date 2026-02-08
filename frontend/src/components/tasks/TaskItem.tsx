@@ -243,7 +243,7 @@ export function TaskItem({ task, onDelete }: TaskItemProps) {
         open={showDeleteModal}
         onOpenChange={(open) => !open && setShowDeleteModal(false)}
       >
-        <AlertDialogContent className="sm:max-w-md md:max-w-lg lg:max-w-xl">
+        <AlertDialogContent className="sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] xl:max-w-[700px]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Task</AlertDialogTitle>
             <AlertDialogDescription>
