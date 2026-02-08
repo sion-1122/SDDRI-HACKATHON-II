@@ -7,7 +7,13 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
-| #1249 | 10:49 AM | 🔴 | Discovered UnboundLocalError in toggle_complete function | ~251 |
+| #1272 | 11:07 AM | 🔵 | Located recurrence calculation methods in codebase | ~191 |
+| #1263 | 10:59 AM | 🟣 | Implemented Advanced Features: Due Dates, Reminders, and Recurring Tasks | ~381 |
+| #1260 | 10:57 AM | ✅ | Committed Phase 8 advanced features implementation | ~254 |
+| #1259 | 10:56 AM | ✅ | Staged comprehensive changes for advanced features implementation | ~293 |
+| #1251 | 10:50 AM | 🔄 | Removed redundant datetime import in recurrence logic | ~203 |
+| #1250 | 10:49 AM | 🔵 | Examined update_task_tags and toggle_complete for consistency | ~245 |
+| #1249 | " | 🔴 | Discovered UnboundLocalError in toggle_complete function | ~251 |
 | #1242 | 10:39 AM | 🔴 | Added priority string to enum conversion in update_task endpoint | ~217 |
 | #1241 | " | 🔵 | Located update_task endpoints in tasks.py | ~137 |
 | #1239 | " | 🔴 | Fixed priority case sensitivity in task creation endpoint | ~220 |
@@ -21,5 +27,44 @@
 | #1218 | 10:27 AM | 🔵 | Examined task list endpoint for 500 error investigation | ~263 |
 | #1214 | 10:19 AM | 🔴 | Fixed parameter ordering in update_reminder function | ~242 |
 | #1213 | " | 🔴 | Fixed parameter ordering in update_reminder endpoint | ~271 |
-| #1212 | 10:18 AM | 🔴 | Fixed SyntaxError in FastAPI route parameter ordering | ~278 |
+
+### Feb 7, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1516 | 12:49 PM | 🔴 | Request Import Added to Fix ChatKit Endpoint | ~154 |
+| #1515 | 12:48 PM | 🔴 | ChatKit SSE Endpoint Request Parameter Fixed | ~170 |
+| #1514 | " | 🔴 | ChatKit SSE Endpoint Function Signature Fixed | ~166 |
+| #1513 | " | 🔵 | ChatKit SSE Endpoint Implementation Reviewed | ~156 |
+| #1512 | 12:47 PM | 🔵 | ChatKit SSE Endpoint Signature Located | ~148 |
+| #1490 | 12:15 PM | 🔄 | Updated Legacy Chat Endpoint to Use Non-Streaming Agent | ~171 |
+| #1489 | " | 🔵 | Legacy Chat Endpoint Implementation Reviewed | ~194 |
+| #1488 | " | 🔄 | Chat API Import Updated - run_agent Function Renamed | ~277 |
+| #1487 | " | 🔵 | Legacy agent streaming function still referenced in chat API | ~361 |
+| #1486 | " | 🔵 | Legacy Chat API Endpoint Reviewed | ~145 |
+| #1485 | 12:14 PM | 🔴 | ImportError in chat.py references deleted run_agent_with_streaming function | ~245 |
+| #1469 | 12:01 PM | 🔄 | Legacy WebSocket References Still Present in Backend Code | ~225 |
+| #1463 | 11:57 AM | 🟣 | ChatKit Migration Complete - WebSocket Replaced with SSE | ~300 |
+| #1450 | 11:53 AM | 🔵 | Backend WebSocket Code References Identified | ~146 |
+| #1449 | 11:52 AM | 🔄 | Removed WebSocket manager import from backend/api/chat.py | ~224 |
+| #1443 | " | 🔵 | WebSocket code discovered in backend/api/chat.py | ~234 |
+| #1435 | 11:44 AM | 🟣 | Connection-Aware SSE Streaming Implemented | ~188 |
+| #1429 | 11:36 AM | 🟣 | Phase 2 ChatKit Foundation Completed | ~191 |
+
+### Feb 8, 2026
+
+| ID | Time | T | Title | Read |
+|----|------|---|-------|------|
+| #1538 | 12:05 PM | 🔴 | SSE JSON Parsing Error in TaskChat Frontend | ~192 |
+| #1534 | 12:02 PM | 🔴 | Database NotNullConstraint on conversation_id Column | ~174 |
+| #1531 | 11:58 AM | 🔴 | Message Model conversation_id NotNull Constraint Violation | ~159 |
+| #1528 | 11:53 AM | 🔴 | Missing Database Schema Migration for tool_calls Column | ~180 |
+| #1527 | 11:52 AM | 🔴 | Missing Logger Variable in ChatKit Endpoint | ~174 |
+| #1526 | 11:51 AM | ✅ | Fixed Logger Reference in ChatKit Endpoint | ~114 |
+| #1525 | " | 🔄 | Refactored ChatKit Endpoint to Use Synchronous Database Operations | ~214 |
+| #1524 | " | 🔄 | ChatKit SSE Endpoint Refactored to Synchronous Database Operations | ~208 |
+| #1523 | 11:49 AM | 🔴 | Verified Async Driver Conversion Implementation | ~167 |
+| #1522 | " | 🔴 | Missing asyncpg Dependency for Async PostgreSQL Driver | ~170 |
+| #1521 | 11:47 AM | 🔴 | Fixed SQLAlchemy Async Driver URL Conversion | ~179 |
+| #1520 | 11:46 AM | 🔴 | SQLAlchemy Async Engine Driver Mismatch | ~160 |
 </claude-mem-context>

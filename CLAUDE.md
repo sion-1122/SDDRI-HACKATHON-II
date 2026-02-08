@@ -16,6 +16,7 @@ Auto-generated from all feature plans. Last updated: 2026-01-02
 - Neon Serverless PostgreSQL (external, cloud-hosted) (006-k8s-deployment)
 - Neon Serverless PostgreSQL (existing) (007-intermediate-todo-features)
 - TypeScript 5+ (frontend), Python 3.13+ (backend) (008-advanced-features)
+- Neon Serverless PostgreSQL (existing, threads table added) (010-chatkit-migration)
 
 - Python 3.13+ + TUI library (textual, rich, or prompt_toolkit - to be determined in research phase) (001-todo-cli-tui)
 
@@ -45,9 +46,9 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.13+: Follow standard conventions
 
 ## Recent Changes
+- 010-chatkit-migration: Added Python 3.13+ (backend), TypeScript 5+ (frontend)
 - 008-advanced-features: Added TypeScript 5+ (frontend), Python 3.13+ (backend)
 - 007-intermediate-todo-features: Added Neon Serverless PostgreSQL (existing)
-- 006-k8s-deployment: Added Python 3.13+ (backend), TypeScript 5+ (frontend) + Docker Desktop, Minikube, Helm 3+, kubectl-ai (optional), kagent (optional)
 
 
 <!-- MANUAL ADDITIONS START -->

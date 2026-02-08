@@ -8,12 +8,4 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #1204 | 1:53 PM | 🟣 | TaskFormData interface extended with recurrence field support | ~269 |
-| #1203 | " | 🔵 | TaskFormData interface already includes reminder_offset field for advanced features | ~288 |
-| #1190 | 1:33 PM | ✅ | TaskFormData type extended with reminder_offset field for form state management | ~325 |
-| #1155 | 12:48 PM | ✅ | Filter state extended with due_before and due_after parsers for URL state management | ~372 |
-| #1135 | 12:35 PM | 🟣 | FilterState interface extended with due date range fields for advanced filtering | ~256 |
-| #1134 | 12:34 PM | ✅ | Frontend Task types extended with advanced features for reminders and recurrence | ~342 |
-| #1133 | " | 🟣 | Task TypeScript interface extended with advanced features for frontend type safety | ~376 |
-| #1132 | " | 🟣 | Frontend Task types import added for RecurrenceRule type | ~165 |
-| #1131 | 12:33 PM | 🟣 | Frontend RecurrenceRule type definitions created for recurrence feature | ~268 |
 </claude-mem-context>

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { MessageCircle, X } from "lucide-react";
-import { ChatInterface } from "@/components/chat/ChatInterface";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { TaskChat } from "@/components/chat/TaskChat";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { useChatContext } from "./ChatProvider";
 import { useSession } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,9 @@ export function FloatingChat() {
                     className="max-w-[100vw] sm:max-w-[500px] md:max-w-[600px] lg:max-w-[700px] p-0"
                     showCloseButton={false}
                 >
+                    {/* Hidden title for accessibility (required by Radix UI) */}
+                    <SheetTitle className="sr-only">AI Task Assistant Chat</SheetTitle>
+
                     <div className="flex flex-col h-full overflow-hidden">
                         {/* Custom header */}
                         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
@@ -91,7 +94,7 @@ export function FloatingChat() {
 
                         {/* Chat interface - fill the remaining space */}
                         <div className="flex-1 min-h-0 h-full">
-                            <ChatInterface userId={user.id} />
+                            <TaskChat userId={user.id} className="h-full w-full" />
                         </div>
                     </div>
                 </SheetContent>

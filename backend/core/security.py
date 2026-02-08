@@ -145,3 +145,40 @@ def decode_access_token(token: str) -> dict:
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def get_current_user_id_from_cookie(request) -> Optional[str]:
+    """Extract and validate user ID from JWT token in httpOnly cookie.
+
+    [Task]: T011
+    [From]: specs/010-chatkit-migration/contracts/backend.md - Authentication Contracts
+
+    This function extracts the JWT token from the auth_token httpOnly cookie,
+    decodes it, and returns the user_id (sub claim).
+
+    Args:
+        request: FastAPI/Starlette request object
+
+    Returns:
+        User ID (UUID string) or None if authentication fails
+
+    Raises:
+        HTTPException: If token is invalid (only if raise_on_error=True)
+    """
+    # Try httpOnly cookie first
+    # [From]: specs/010-chatkit-migration/contracts/backend.md
+    auth_token = request.cookies.get("auth_token")
+    if not auth_token:
+        return None
+
+    try:
+        payload = decode_access_token(auth_token)
+        user_id = payload.get("sub")
+        return user_id
+    except HTTPException:
+        return None
+    except Exception as e:
+        # Log but don't raise for non-critical operations
+        import logging
+        logging.getLogger("api.auth").warning(f"Failed to decode token from cookie: {e}")
+        return None

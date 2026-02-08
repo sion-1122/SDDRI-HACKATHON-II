@@ -8,7 +8,6 @@
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
 | #1209 | 1:55 PM | 🟣 | TaskForm integrated with RecurrencePicker for recurring task configuration | ~315 |
-| #1167 | 1:00 PM | 🔴 | DueDateField mockTask fixed to match Task interface requirements | ~235 |
 | #1166 | 12:52 PM | 🟣 | FilterBar active filter summary extended to display date range filters | ~276 |
 | #1161 | 12:51 PM | 🟣 | TaskListClient extended to pass date range filters to API | ~285 |
 | #1152 | 12:46 PM | 🔴 | DueDateBadge component fixed to use formattedDate variable | ~215 |

@@ -28,6 +28,23 @@ This is a hackathon project demonstrating modern full-stack development practice
 | Phase 6 | ✅ Complete | Intermediate Todo Features (Priority, Tags, Filters, Sort, Search) |
 | Phase 7 | ✅ Complete | Kubernetes Deployment (Minikube + Helm) |
 | Phase 8 | ✅ Complete | Advanced Features (Due Dates, Reminders, Recurring Tasks) |
+| Phase 10 | ✅ Complete | ChatKit Migration with Gemini LLM |
+
+### Phase 10: ChatKit Migration with Gemini LLM (Complete)
+
+**Branch**: `010-chatkit-migration`
+
+#### Completed
+- ✅ OpenAI ChatKit Python SDK + React library integration
+- ✅ Gemini LLM via OpenAI-compatible endpoint (gemini-2.0-flash-exp)
+- ✅ SSE streaming (replaces WebSocket)
+- ✅ 7 MCP tools wrapped as Agents SDK functions
+- ✅ PostgresChatKitStore for thread/message persistence
+- ✅ Custom authentication via httpOnly cookies
+- ✅ Error resilience (connection drops, timeouts)
+- ✅ ~950 LOC removed (legacy WebSocket code deleted)
+
+**Documentation**: See `specs/010-chatkit-migration/README.md` for full architecture details
 
 ### Phase 8: Advanced Features (Complete)
 
@@ -157,10 +174,12 @@ helm install todo-app ./k8s/helm/todo-app
 ### Backend
 - **Python 3.13+** - Runtime
 - **FastAPI** - Web framework
-- **SQLAlchemy** - ORM
+- **SQLModel** - ORM
 - **Neon PostgreSQL** - Database (serverless)
-- **OpenAI API** - AI chatbot
-- **WebSocket** - Real-time chat streaming
+- **Gemini LLM** - AI chatbot (via OpenAI-compatible endpoint)
+- **ChatKit Python SDK** - Chat framework
+- **OpenAI Agents SDK** - Tool execution
+- **SSE** - Real-time streaming (Server-Sent Events)
 
 ### Infrastructure
 - **Docker** - Containerization
@@ -187,8 +206,11 @@ helm install todo-app ./k8s/helm/todo-app
 ### AI Chatbot
 - ✅ Natural language task creation
 - ✅ Natural language task updates
-- ✅ Real-time streaming responses
-- ✅ WebSocket progress updates
+- ✅ Real-time streaming responses (SSE)
+- ✅ Tool execution visualization (ChatKit UI)
+- ✅ Conversation persistence (threads)
+- ✅ Cross-tab synchronization
+- ✅ Error resilience (connection drops, timeouts)
 
 ### Deployment
 - ✅ Docker containers for frontend and backend
