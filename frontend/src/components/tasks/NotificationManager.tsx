@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { taskApi } from "@/lib/task-api"
 import type { Task } from "@/types/task"
 import { useNotificationPermission } from "./NotificationPermissionPrompt"
+import { apiClientFn } from "@/lib/api/client"
 
 /**
  * NotificationManager component for handling browser notifications.
@@ -176,14 +177,14 @@ export function NotificationManager({
       }
 
       // Mark reminders as sent via API
+      // Use apiClientFn to ensure cookies are sent correctly
       for (const task of tasksNeedingNotification) {
         try {
-          await fetch(`/api/tasks/${task.id}/reminder`, {
+          await apiClientFn({
+            url: `/api/tasks/${task.id}/reminder`,
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ reset_sent: false }),
-          })
+            data: { reset_sent: false },
+          });
         } catch (error) {
           console.error("Error marking reminder as sent:", error)
         }
