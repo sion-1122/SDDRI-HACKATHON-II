@@ -84,11 +84,16 @@ export const apiClientFn = async ({
     "Content-Type": "application/json",
   };
 
+  // Use Next.js proxy route for auth endpoints to ensure cookies are set correctly
+  // For other endpoints, use the backend URL directly
+  const isAuthEndpoint = url.startsWith("/api/auth");
+  const requestUrl = isAuthEndpoint ? url : `${API_URL}${url}`;
+
   // JWT token is stored in httpOnly cookie
   // Browser sends it automatically, no need to add Authorization header
   try {
     const response = await fetchWithTimeout(
-      `${API_URL}${url}`,
+      requestUrl,
       {
         method,
         headers,

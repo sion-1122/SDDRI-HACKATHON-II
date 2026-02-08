@@ -27,6 +27,12 @@ export async function serverFetch<T>({
   method = 'GET',
   data,
 }: ServerFetchRequestConfig): Promise<T> {
+  // For server-side, we call the backend directly but forward cookies properly
+  // Auth endpoints should work if cookies are forwarded correctly
+  // Note: Server components should avoid calling session endpoints if possible
+  // Use client-side hooks (useSession) for session management instead
+  const requestUrl = `${API_URL}${url}`;
+
   const cookieStore = await cookies();
 
   // Build headers with forwarded cookies
@@ -42,7 +48,7 @@ export async function serverFetch<T>({
       .join('; ');
   }
 
-  const response = await fetch(`${API_URL}${url}`, {
+  const response = await fetch(requestUrl, {
     method,
     headers,
     ...(data && { body: JSON.stringify(data) }),
