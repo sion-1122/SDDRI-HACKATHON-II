@@ -25,13 +25,10 @@ export function DashboardHeader() {
 
   const handleLogout = async () => {
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/sign-out`,
-        {
-          method: "POST",
-          credentials: "include",
-        },
-      );
+      await fetch("/api/auth/sign-out", {
+        method: "POST",
+        credentials: "include",
+      });
     } catch (err) {
       console.error("Logout failed:", err);
     }

@@ -50,7 +50,10 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Use Next.js proxy route for auth endpoints to ensure cookies are set correctly
+    // For other endpoints, use the backend URL directly
+    const isAuthEndpoint = endpoint.startsWith("/api/auth");
+    const url = isAuthEndpoint ? endpoint : `${this.baseUrl}${endpoint}`;
 
     const defaultOptions: RequestInit = {
       credentials: "include", // Include httpOnly cookies

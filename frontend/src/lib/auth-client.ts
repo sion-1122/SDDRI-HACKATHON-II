@@ -8,10 +8,17 @@ This client provides methods for user authentication:
 - signUp.email() - Register with email and password
 - signOut() - Logout current user
 - getSession() - Get current user session
+
+Note: Uses Next.js API proxy route to ensure cookies are set correctly
+on the frontend domain, especially in production environments.
 */
 "use client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Use Next.js proxy route instead of direct backend URL
+// This ensures cookies are set on the frontend domain
+const API_URL = typeof window !== 'undefined' 
+  ? window.location.origin 
+  : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 interface User {
   id: string;
@@ -52,7 +59,7 @@ export const authClient = {
    */
   signIn: {
     email: async (credentials: SignInCredentials) => {
-      const response = await fetch(`${API_URL}/api/auth/sign-in`, {
+      const response = await fetch("/api/auth/sign-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
@@ -81,7 +88,7 @@ export const authClient = {
    */
   signUp: {
     email: async (credentials: SignUpCredentials) => {
-      const response = await fetch(`${API_URL}/api/auth/sign-up`, {
+      const response = await fetch("/api/auth/sign-up", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
@@ -109,7 +116,7 @@ export const authClient = {
    * Sign out current user
    */
   signOut: async () => {
-    const response = await fetch(`${API_URL}/api/auth/sign-out`, {
+    const response = await fetch("/api/auth/sign-out", {
       method: "POST",
       credentials: "include",
     });
@@ -126,7 +133,7 @@ export const authClient = {
    * Get current session
    */
   getSession: async () => {
-    const response = await fetch(`${API_URL}/api/auth/session`, {
+    const response = await fetch("/api/auth/session", {
       credentials: "include",
     });
 
