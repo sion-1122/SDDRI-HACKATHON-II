@@ -11,10 +11,24 @@ Endpoints proxied:
 - POST /api/auth/sign-up - User registration
 - POST /api/auth/sign-out - User logout
 - GET /api/auth/session - Get current session
+
+
+
+
 */
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Read backend URL dynamically to ensure it's available at runtime
+function getBackendUrl(): string {
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
+  
+  // Log in development to help debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Auth Proxy] Backend URL:', backendUrl);
+  }
+  
+  return backendUrl;
+}
 
 export async function GET(request: NextRequest) {
   return proxyRequest(request);
@@ -27,6 +41,7 @@ export async function POST(request: NextRequest) {
 async function proxyRequest(request: NextRequest) {
   try {
     const url = new URL(request.url);
+    const BACKEND_URL = getBackendUrl();
     const backendUrl = `${BACKEND_URL}/api/auth${url.pathname.replace('/api/auth', '')}${url.search}`;
 
     // Prepare headers for backend request

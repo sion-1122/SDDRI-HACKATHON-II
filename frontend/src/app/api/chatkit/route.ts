@@ -12,10 +12,21 @@ Endpoint proxied:
 */
 import { NextRequest } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Read backend URL dynamically to ensure it's available at runtime
+function getBackendUrl(): string {
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
+  
+  // Log in development to help debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[ChatKit Proxy] Backend URL:', backendUrl);
+  }
+  
+  return backendUrl;
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const BACKEND_URL = getBackendUrl();
     const backendUrl = `${BACKEND_URL}/api/chatkit`;
 
     // Prepare headers for backend request
