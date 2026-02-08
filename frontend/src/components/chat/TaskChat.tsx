@@ -41,7 +41,11 @@ export function TaskChat({ userId, initialThreadId, className = "" }: TaskChatPr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  // Use Next.js proxy route instead of direct backend URL
+  // This ensures cookies are sent correctly in production
+  const API_URL = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -74,7 +78,8 @@ export function TaskChat({ userId, initialThreadId, className = "" }: TaskChatPr
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch(`${API_URL}/api/chatkit`, {
+      // Use Next.js proxy route to ensure cookies are sent correctly
+      const response = await fetch("/api/chatkit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
